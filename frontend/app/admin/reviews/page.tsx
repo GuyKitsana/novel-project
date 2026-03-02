@@ -153,23 +153,23 @@ export default function AdminReviewsPage() {
   if (!me) return null;
 
   return (
-    <main className="min-h-screen bg-orange-50 p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <main className="min-h-screen bg-orange-50 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
         {/* ===== HEADER ===== */}
-        <div className="bg-white rounded-3xl shadow px-6 py-5 border border-orange-100">
-          <h1 className="text-2xl font-bold text-orange-700">
+        <div className="bg-white rounded-3xl shadow px-4 py-4 md:px-6 md:py-5 border border-orange-100">
+          <h1 className="text-xl md:text-2xl font-bold text-orange-700">
             📝 Admin • Review Management
           </h1>
-          <p className="text-sm font-medium text-slate-700 mt-1">
+          <p className="text-xs md:text-sm font-medium text-slate-700 mt-1">
             ตรวจสอบและจัดการรีวิวจากผู้ใช้งาน
           </p>
         </div>
 
         {/* ===== ACTION BAR ===== */}
-        <div className="bg-white p-4 rounded-3xl shadow border border-orange-100 flex gap-3">
+        <div className="bg-white p-4 rounded-3xl shadow border border-orange-100 flex flex-col md:flex-row gap-3">
           <button
             onClick={() => router.push("/admin")}
-            className="px-4 py-2 rounded-xl bg-orange-500 text-white font-semibold"
+            className="w-full md:w-auto px-4 py-2 rounded-xl bg-orange-500 text-white font-semibold text-sm md:text-base"
           >
             🏠 Home Admin
           </button>
@@ -179,11 +179,12 @@ export default function AdminReviewsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="
-                            flex-1
+                            w-full md:flex-1
                             px-4 py-2
                             rounded-xl
                             border border-slate-300
                             font-normal
+                            text-sm md:text-base
                             text-slate-900
                             placeholder:text-slate-500
                             focus:outline-none
@@ -193,8 +194,8 @@ export default function AdminReviewsPage() {
           />
         </div>
 
-        {/* ===== TABLE ===== */}
-        <div className="bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
+        {/* ===== TABLE (Desktop) ===== */}
+        <div className="hidden md:block bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-orange-600 text-white text-sm font-semibold">
               <tr>
@@ -284,16 +285,87 @@ export default function AdminReviewsPage() {
           </table>
         </div>
 
+        {/* ===== CARD LIST (Mobile) ===== */}
+        <div className="md:hidden bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
+          {pagedReviews.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <p className="text-slate-500 font-medium">
+                {search ? "ไม่พบรีวิวที่ค้นหา" : "ยังไม่มีรีวิว"}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {pagedReviews.map((r) => (
+                <div
+                  key={r.id}
+                  className="p-4 hover:bg-orange-50 transition-colors"
+                >
+                  <div className="space-y-3">
+                    {/* Header: Book Title & User */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        {r.book_title && (
+                          <h3 className="font-semibold text-base text-slate-900 mb-1 truncate">
+                            {r.book_title}
+                          </h3>
+                        )}
+                        {r.username && (
+                          <p className="text-sm text-slate-600 truncate">
+                            โดย {r.username}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setConfirmTarget(r);
+                          setConfirmOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition-colors flex-shrink-0"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+
+                    {/* Rating */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-medium text-orange-600">
+                        {renderStars(r.rating)}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        ({r.rating}/5)
+                      </span>
+                    </div>
+
+                    {/* Review Text */}
+                    {r.comment && (
+                      <p className="text-sm text-slate-700 line-clamp-3">
+                        {r.comment}
+                      </p>
+                    )}
+
+                    {/* Date */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-500">
+                        {formatDate(r.created_at)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* ===== PAGINATION ===== */}
         {totalPages > 1 && (
           <div className="bg-white rounded-3xl shadow border border-orange-100 p-4">
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               {/* Previous Button */}
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className={`
-                  px-4 py-2 rounded-full font-semibold text-sm transition
+                  px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition
                   ${page === 1
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                     : "bg-orange-500 text-white hover:bg-orange-600 active:scale-95"
@@ -304,7 +376,7 @@ export default function AdminReviewsPage() {
               </button>
 
               {/* Page Numbers */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5">
                 {(() => {
                   const pages: (number | string)[] = [];
 
@@ -340,7 +412,7 @@ export default function AdminReviewsPage() {
                   return pages.map((item, idx) => {
                     if (item === "ellipsis-start" || item === "ellipsis-end") {
                       return (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-slate-400">
+                        <span key={`ellipsis-${idx}`} className="px-1 sm:px-2 text-slate-400 text-xs sm:text-sm">
                           ...
                         </span>
                       );
@@ -352,7 +424,7 @@ export default function AdminReviewsPage() {
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
                         className={`
-                          w-10 h-10 rounded-full font-semibold text-sm transition
+                          w-9 h-9 sm:w-10 sm:h-10 rounded-full font-semibold text-xs sm:text-sm transition
                           ${pageNum === page
                             ? "bg-orange-600 text-white"
                             : "bg-slate-100 text-slate-700 hover:bg-orange-100 hover:text-orange-700 active:scale-95"
@@ -371,7 +443,7 @@ export default function AdminReviewsPage() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className={`
-                  px-4 py-2 rounded-full font-semibold text-sm transition
+                  px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition
                   ${page === totalPages
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                     : "bg-orange-500 text-white hover:bg-orange-600 active:scale-95"
@@ -384,7 +456,7 @@ export default function AdminReviewsPage() {
 
             {/* Page Info Text */}
             <div className="mt-3 text-center">
-              <span className="text-sm font-medium text-slate-600">
+              <span className="text-xs sm:text-sm font-medium text-slate-600">
                 หน้า {page} จาก {totalPages} • ทั้งหมด {filtered.length} รีวิว
               </span>
             </div>
@@ -445,9 +517,9 @@ export default function AdminReviewsPage() {
 
       {/* ===== CONFIRM DELETE MODAL ===== */}
       {confirmOpen && confirmTarget && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-100 shadow-2xl">
-            <h3 className="text-xl font-bold text-red-600 mb-2">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-md border border-slate-100 shadow-2xl">
+            <h3 className="text-lg sm:text-xl font-bold text-red-600 mb-2">
               ยืนยันการลบรีวิว
             </h3>
             <p className="text-sm font-medium text-slate-800">
@@ -464,7 +536,7 @@ export default function AdminReviewsPage() {
                   setConfirmOpen(false);
                   setConfirmTarget(null);
                 }}
-                className="px-4 py-2 rounded-xl border font-semibold text-slate-900 hover:bg-slate-50"
+                className="px-4 py-2 rounded-xl border font-semibold text-sm text-slate-900 hover:bg-slate-50"
               >
                 ยกเลิก
               </button>
@@ -475,7 +547,7 @@ export default function AdminReviewsPage() {
                   setConfirmTarget(null);
                   await handleDeleteReview(id);
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700"
+                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700"
               >
                 ลบรีวิว
               </button>

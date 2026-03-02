@@ -193,23 +193,23 @@ export default function AdminCategoriesPage() {
   if (!me) return null;
 
   return (
-    <main className="min-h-screen bg-orange-50 p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+    <main className="min-h-screen bg-orange-50 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-4 md:space-y-6">
         {/* ===== HEADER ===== */}
-        <div className="bg-white rounded-3xl shadow px-6 py-5 border border-orange-100">
-          <h1 className="text-2xl font-bold text-orange-700">
+        <div className="bg-white rounded-3xl shadow px-4 py-4 md:px-6 md:py-5 border border-orange-100">
+          <h1 className="text-xl md:text-2xl font-bold text-orange-700">
             📂 Admin • Category Management
           </h1>
-          <p className="text-sm font-medium text-slate-700 mt-1">
+          <p className="text-xs md:text-sm font-medium text-slate-700 mt-1">
             จัดการหมวดหมู่นิยายทั้งหมดในระบบ
           </p>
         </div>
 
         {/* ===== ACTION BAR ===== */}
-        <div className="bg-white p-4 rounded-3xl shadow border border-orange-100 flex gap-3">
+        <div className="bg-white p-4 rounded-3xl shadow border border-orange-100 flex flex-col md:flex-row gap-3">
           <button
             onClick={() => router.push("/admin")}
-            className="px-4 py-2 rounded-xl bg-orange-500 text-white font-semibold"
+            className="w-full md:w-auto px-4 py-2 rounded-xl bg-orange-500 text-white font-semibold text-sm md:text-base"
           >
             🏠 Home Admin
           </button>
@@ -219,11 +219,12 @@ export default function AdminCategoriesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="
-                            flex-1
+                            w-full md:flex-1
                             px-4 py-2
                             rounded-xl
                             border border-slate-300
                             font-normal
+                            text-sm md:text-base
                             text-slate-900
                             placeholder:text-slate-500
                             focus:outline-none
@@ -238,14 +239,14 @@ export default function AdminCategoriesPage() {
               setForm({ name: "", code: "" });
               setOpen(true);
             }}
-            className="px-5 py-2 rounded-xl bg-orange-600 text-white font-semibold"
+            className="w-full md:w-auto px-5 py-2 rounded-xl bg-orange-600 text-white font-semibold text-sm md:text-base"
           >
             ➕ เพิ่มหมวดหมู่
           </button>
         </div>
 
-        {/* ===== TABLE ===== */}
-        <div className="bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
+        {/* ===== TABLE (Desktop) ===== */}
+        <div className="hidden md:block bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-orange-600 text-white text-sm font-semibold">
               <tr>
@@ -310,16 +311,64 @@ export default function AdminCategoriesPage() {
           </table>
         </div>
 
+        {/* ===== CARD LIST (Mobile) ===== */}
+        <div className="md:hidden bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
+          <div className="divide-y divide-slate-100">
+            {pagedCategories.map((c) => (
+              <div
+                key={c.id}
+                className="p-4 hover:bg-orange-50 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base text-slate-900 mb-2 truncate">
+                      {c.name}
+                    </h3>
+                    <span className="inline-block px-2.5 py-1 rounded-md font-mono font-normal text-xs text-slate-500 bg-slate-50 truncate max-w-full">
+                      {c.code}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditing(c);
+                        setForm({
+                          name: c.name,
+                          code: c.code,
+                        });
+                        setOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-sky-500 text-white font-semibold text-xs hover:bg-sky-600 transition-colors"
+                    >
+                      ✏️
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setConfirmTarget(c);
+                        setConfirmOpen(true);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition-colors"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* ===== PAGINATION ===== */}
         {totalPages > 1 && (
           <div className="bg-white rounded-3xl shadow border border-orange-100 p-4">
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               {/* Previous Button */}
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
                 className={`
-                  px-4 py-2 rounded-full font-semibold text-sm transition
+                  px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition
                   ${page === 1
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                     : "bg-orange-500 text-white hover:bg-orange-600 active:scale-95"
@@ -330,7 +379,7 @@ export default function AdminCategoriesPage() {
               </button>
 
               {/* Page Numbers */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5">
                 {(() => {
                   const pages: (number | string)[] = [];
 
@@ -366,7 +415,7 @@ export default function AdminCategoriesPage() {
                   return pages.map((item, idx) => {
                     if (item === "ellipsis-start" || item === "ellipsis-end") {
                       return (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-slate-400">
+                        <span key={`ellipsis-${idx}`} className="px-1 sm:px-2 text-slate-400 text-xs sm:text-sm">
                           ...
                         </span>
                       );
@@ -378,7 +427,7 @@ export default function AdminCategoriesPage() {
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
                         className={`
-                          w-10 h-10 rounded-full font-semibold text-sm transition
+                          w-9 h-9 sm:w-10 sm:h-10 rounded-full font-semibold text-xs sm:text-sm transition
                           ${pageNum === page
                             ? "bg-orange-600 text-white"
                             : "bg-slate-100 text-slate-700 hover:bg-orange-100 hover:text-orange-700 active:scale-95"
@@ -397,7 +446,7 @@ export default function AdminCategoriesPage() {
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
                 className={`
-                  px-4 py-2 rounded-full font-semibold text-sm transition
+                  px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-semibold text-xs sm:text-sm transition
                   ${page === totalPages
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed"
                     : "bg-orange-500 text-white hover:bg-orange-600 active:scale-95"
@@ -410,7 +459,7 @@ export default function AdminCategoriesPage() {
 
             {/* Page Info Text */}
             <div className="mt-3 text-center">
-              <span className="text-sm font-medium text-slate-600">
+              <span className="text-xs sm:text-sm font-medium text-slate-600">
                 หน้า {page} จาก {totalPages} • ทั้งหมด {filtered.length} หมวดหมู่
               </span>
             </div>
@@ -471,17 +520,17 @@ export default function AdminCategoriesPage() {
 
       {/* ===== MODAL: ADD/EDIT CATEGORY ===== */}
       {open && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50 overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur flex items-center justify-center z-50 overflow-hidden px-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl max-h-[90vh] flex flex-col">
             {/* ===== HEADER ===== */}
-            <div className="p-6 border-b border-slate-200">
-              <h3 className="text-xl font-semibold text-orange-700">
+            <div className="p-4 sm:p-6 border-b border-slate-200">
+              <h3 className="text-lg sm:text-xl font-semibold text-orange-700">
                 {editing ? "✏️ แก้ไขหมวดหมู่" : "➕ เพิ่มหมวดหมู่"}
               </h3>
             </div>
 
             {/* ===== SCROLLABLE CONTENT ===== */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {/* ===== NAME ===== */}
               <input
                 placeholder="ชื่อหมวดหมู่ (ภาษาไทย)"
@@ -520,7 +569,7 @@ export default function AdminCategoriesPage() {
             </div>
 
             {/* ===== STICKY FOOTER ===== */}
-            <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 rounded-b-3xl flex justify-end gap-2">
+            <div className="sticky bottom-0 bg-white border-t border-slate-200 px-4 sm:px-6 py-4 rounded-b-3xl flex justify-end gap-2">
               <button
                 onClick={() => setOpen(false)}
                 className="
