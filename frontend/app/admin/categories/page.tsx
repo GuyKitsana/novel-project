@@ -261,22 +261,35 @@ export default function AdminCategoriesPage() {
             </thead>
 
             <tbody className="text-sm text-slate-800">
-              {pagedCategories.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-b border-slate-100 hover:bg-orange-50 transition-colors"
-                >
-                  <td className="pl-6 pr-3 py-3 align-middle">
-                    <div className="font-semibold text-base text-slate-900">
-                      {c.name}
+              {pagedCategories.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-3 py-8 text-center align-middle">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-3xl">📂</span>
+                      <p className="text-slate-500 font-medium">ไม่พบหมวดหมู่</p>
+                      <p className="text-xs text-slate-400">
+                        {search ? "ลองค้นหาด้วยคำอื่น" : "เริ่มเพิ่มหมวดหมู่ใหม่"}
+                      </p>
                     </div>
                   </td>
+                </tr>
+              ) : (
+                pagedCategories.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="border-b border-slate-100 hover:bg-orange-50 transition-colors"
+                  >
+                    <td className="pl-6 pr-3 py-3 align-middle">
+                      <div className="font-semibold text-base text-slate-900 truncate max-w-xs">
+                        {c.name}
+                      </div>
+                    </td>
 
-                  <td className="px-3 py-3 text-center align-middle">
-                    <span className="inline-block px-2.5 py-1 rounded-md font-mono font-normal text-xs text-slate-500 bg-slate-50">
-                      {c.code}
-                    </span>
-                  </td>
+                    <td className="px-3 py-3 text-center align-middle">
+                      <span className="inline-block px-2.5 py-1 rounded-md font-mono font-normal text-xs text-slate-500 bg-slate-50 truncate max-w-xs">
+                        {c.code}
+                      </span>
+                    </td>
 
                   <td className="px-3 py-3 text-center align-middle">
                     <div className="flex justify-center items-center gap-1.5">
@@ -306,57 +319,70 @@ export default function AdminCategoriesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* ===== CARD LIST (Mobile) ===== */}
         <div className="md:hidden bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
-          <div className="divide-y divide-slate-100">
-            {pagedCategories.map((c) => (
-              <div
-                key={c.id}
-                className="p-4 hover:bg-orange-50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-base text-slate-900 mb-2 truncate">
-                      {c.name}
-                    </h3>
-                    <span className="inline-block px-2.5 py-1 rounded-md font-mono font-normal text-xs text-slate-500 bg-slate-50 truncate max-w-full">
-                      {c.code}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        setEditing(c);
-                        setForm({
-                          name: c.name,
-                          code: c.code,
-                        });
-                        setOpen(true);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-sky-500 text-white font-semibold text-xs hover:bg-sky-600 transition-colors"
-                    >
-                      ✏️
-                    </button>
+          {pagedCategories.length === 0 ? (
+            <div className="px-4 py-8 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-3xl">📂</span>
+                <p className="text-slate-500 font-medium">ไม่พบหมวดหมู่</p>
+                <p className="text-xs text-slate-400">
+                  {search ? "ลองค้นหาด้วยคำอื่น" : "เริ่มเพิ่มหมวดหมู่ใหม่"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {pagedCategories.map((c) => (
+                <div
+                  key={c.id}
+                  className="p-4 hover:bg-orange-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-base text-slate-900 mb-2 truncate">
+                        {c.name}
+                      </h3>
+                      <span className="inline-block px-2.5 py-1 rounded-md font-mono font-normal text-xs text-slate-500 bg-slate-50 truncate max-w-full">
+                        {c.code}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => {
+                          setEditing(c);
+                          setForm({
+                            name: c.name,
+                            code: c.code,
+                          });
+                          setOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-sky-500 text-white font-semibold text-xs hover:bg-sky-600 transition-colors"
+                      >
+                        ✏️
+                      </button>
 
-                    <button
-                      onClick={() => {
-                        setConfirmTarget(c);
-                        setConfirmOpen(true);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition-colors"
-                    >
-                      🗑️
-                    </button>
+                      <button
+                        onClick={() => {
+                          setConfirmTarget(c);
+                          setConfirmOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition-colors"
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ===== PAGINATION ===== */}
@@ -603,9 +629,9 @@ export default function AdminCategoriesPage() {
 
       {/* ===== CONFIRM DELETE MODAL ===== */}
       {confirmOpen && confirmTarget && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-100 shadow-2xl">
-            <h3 className="text-xl font-bold text-red-600 mb-2">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-md border border-slate-100 shadow-2xl">
+            <h3 className="text-lg sm:text-xl font-bold text-red-600 mb-2">
               ยืนยันการลบหมวดหมู่
             </h3>
             <p className="text-sm font-medium text-slate-800">
@@ -614,13 +640,13 @@ export default function AdminCategoriesPage() {
               ({confirmTarget.code}) ใช่ไหม?
             </p>
 
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
               <button
                 onClick={() => {
                   setConfirmOpen(false);
                   setConfirmTarget(null);
                 }}
-                className="px-4 py-2 rounded-xl border font-semibold text-slate-900 hover:bg-slate-50"
+                className="px-4 py-2 rounded-xl border font-semibold text-sm text-slate-900 hover:bg-slate-50"
               >
                 ยกเลิก
               </button>
@@ -631,7 +657,7 @@ export default function AdminCategoriesPage() {
                   setConfirmTarget(null);
                   await deleteCategory(id);
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700"
+                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700"
               >
                 ลบหมวดหมู่
               </button>

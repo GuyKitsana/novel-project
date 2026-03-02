@@ -364,46 +364,55 @@ export default function AdminBooksPage() {
                         </thead>
 
                         <tbody className="text-sm text-slate-800">
-                            {pagedBooks.map((b) => (
-                                <tr key={b.id} className="border-b border-slate-100 hover:bg-orange-50 transition-colors">
-                                    {/* ปก */}
-                                    <td className="px-3 py-3 text-center align-middle">
-                                        {b.cover_image ? (
-                                            <div className="w-20 h-[120px] rounded overflow-hidden mx-auto">
-                                                <img
-                                                    src={getImageUrl(b.cover_image)}
-                                                    alt={b.title}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-20 h-[120px] bg-slate-200 rounded mx-auto" />
-                                        )}
-                                    </td>
-
-                                    {/* ชื่อเรื่อง */}
-                                    <td className="px-3 py-3 align-middle">
-                                        <div className="font-semibold text-base text-slate-900">
-                                            {b.title}
-                                        </div>
-                                    </td>
-
-                                    {/* ผู้แต่ง */}
-                                    <td className="px-3 py-3 text-center align-middle font-medium text-slate-700">
-                                        {b.author || "-"}
-                                    </td>
-
-                                    {/* รายละเอียด */}
-                                    <td className="px-3 py-3 text-center align-middle font-normal text-slate-600 max-w-xs">
-                                        <p className="line-clamp-2 text-xs">
-                                            {b.description || "-"}
+                            {pagedBooks.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="px-3 py-8 text-center align-middle">
+                                        <p className="text-slate-500 font-medium">
+                                            {search ? "ไม่พบข้อมูลหนังสือ" : "ไม่พบข้อมูลหนังสือ"}
                                         </p>
                                     </td>
+                                </tr>
+                            ) : (
+                                pagedBooks.map((b) => (
+                                    <tr key={b.id} className="border-b border-slate-100 hover:bg-orange-50 transition-colors">
+                                        {/* ปก */}
+                                        <td className="px-3 py-3 text-center align-middle">
+                                            {b.cover_image ? (
+                                                <div className="w-20 h-[120px] rounded overflow-hidden mx-auto">
+                                                    <img
+                                                        src={getImageUrl(b.cover_image)}
+                                                        alt={b.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-20 h-[120px] bg-slate-200 rounded mx-auto" />
+                                            )}
+                                        </td>
 
-                                    {/* สำนักพิมพ์ */}
-                                    <td className="px-3 py-3 text-center align-middle font-medium text-slate-700">
-                                        {b.publisher || "-"}
-                                    </td>
+                                        {/* ชื่อเรื่อง */}
+                                        <td className="px-3 py-3 align-middle">
+                                            <div className="font-semibold text-base text-slate-900 truncate max-w-xs">
+                                                {b.title}
+                                            </div>
+                                        </td>
+
+                                        {/* ผู้แต่ง */}
+                                        <td className="px-3 py-3 text-center align-middle font-medium text-slate-700 truncate max-w-xs">
+                                            {b.author || "-"}
+                                        </td>
+
+                                        {/* รายละเอียด */}
+                                        <td className="px-3 py-3 text-center align-middle font-normal text-slate-600 max-w-xs">
+                                            <p className="line-clamp-2 text-xs">
+                                                {b.description || "-"}
+                                            </p>
+                                        </td>
+
+                                        {/* สำนักพิมพ์ */}
+                                        <td className="px-3 py-3 text-center align-middle font-medium text-slate-700 truncate max-w-xs">
+                                            {b.publisher || "-"}
+                                        </td>
 
                                     {/* หมวดหมู่ */}
                                     <td className="px-3 py-3 text-center align-middle">
@@ -507,68 +516,78 @@ export default function AdminBooksPage() {
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            ))
+                            )}
                         </tbody>
                     </table>
                 </div>
 
                 {/* ===== CARD LIST (Mobile) ===== */}
                 <div className="md:hidden bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
-                    <div className="divide-y divide-slate-100">
-                        {pagedBooks.map((b) => (
-                            <div
-                                key={b.id}
-                                className="p-4 hover:bg-orange-50 transition-colors"
-                            >
-                                <div className="flex gap-3">
-                                    {/* Cover Preview */}
-                                    <div className="flex-shrink-0">
-                                        {b.cover_image ? (
-                                            <div className="w-16 h-24 rounded overflow-hidden">
-                                                <img
-                                                    src={getImageUrl(b.cover_image)}
-                                                    alt={b.title}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="w-16 h-24 bg-slate-200 rounded" />
-                                        )}
-                                    </div>
+                    {pagedBooks.length === 0 ? (
+                        <div className="px-4 py-8 text-center">
+                            <p className="text-slate-500 font-medium">
+                                {search ? "ไม่พบข้อมูลหนังสือ" : "ไม่พบข้อมูลหนังสือ"}
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100">
+                            {pagedBooks.map((b) => (
+                                <div
+                                    key={b.id}
+                                    className="p-4 hover:bg-orange-50 transition-colors"
+                                >
+                                    <div className="flex gap-3">
+                                        {/* Cover Preview */}
+                                        <div className="flex-shrink-0">
+                                            {b.cover_image ? (
+                                                <div className="w-16 h-24 rounded overflow-hidden">
+                                                    <img
+                                                        src={getImageUrl(b.cover_image)}
+                                                        alt={b.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-24 bg-slate-200 rounded" />
+                                            )}
+                                        </div>
 
-                                    {/* Content */}
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-base text-slate-900 mb-1 truncate">
-                                            {b.title}
-                                        </h3>
-                                        {b.author && (
-                                            <p className="text-sm text-slate-600 mb-2 truncate">
-                                                โดย {b.author}
-                                            </p>
-                                        )}
-                                        {b.publisher && (
-                                            <p className="text-xs text-slate-500 mb-2 truncate">
-                                                {b.publisher}
-                                            </p>
-                                        )}
-                                        {b.categories && b.categories.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mb-2">
-                                                {b.categories.slice(0, 2).map((c) => (
-                                                    <span
-                                                        key={c}
-                                                        className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 font-semibold text-xs"
-                                                    >
-                                                        {c}
-                                                    </span>
-                                                ))}
-                                                {b.categories.length > 2 && (
-                                                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-xs">
-                                                        +{b.categories.length - 2}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-2 mt-2">
+                                        {/* Content */}
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold text-base text-slate-900 mb-1 truncate">
+                                                {b.title}
+                                            </h3>
+                                            {b.author && (
+                                                <p className="text-sm text-slate-600 mb-1 truncate">
+                                                    โดย {b.author}
+                                                </p>
+                                            )}
+                                            {b.publisher && (
+                                                <p className="text-xs text-slate-500 mb-2 truncate">
+                                                    {b.publisher}
+                                                </p>
+                                            )}
+                                            {b.categories && b.categories.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mb-2">
+                                                    {b.categories.slice(0, 2).map((c) => (
+                                                        <span
+                                                            key={c}
+                                                            className="px-2 py-0.5 rounded-md bg-orange-100 text-orange-700 font-semibold text-xs"
+                                                        >
+                                                            {c}
+                                                        </span>
+                                                    ))}
+                                                    {b.categories.length > 2 && (
+                                                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-semibold text-xs">
+                                                            +{b.categories.length - 2}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* Actions aligned right */}
+                                        <div className="flex items-start gap-1.5 flex-shrink-0">
                                             <button
                                                 onClick={() => {
                                                     setEditing(b);
@@ -610,7 +629,7 @@ export default function AdminBooksPage() {
                                                 }}
                                                 className="px-3 py-1.5 rounded-lg bg-sky-500 text-white font-semibold text-xs hover:bg-sky-600 transition-colors"
                                             >
-                                                ✏️ แก้ไข
+                                                ✏️
                                             </button>
                                             <button
                                                 onClick={() => {
@@ -619,14 +638,14 @@ export default function AdminBooksPage() {
                                                 }}
                                                 className="px-3 py-1.5 rounded-lg bg-red-500 text-white font-semibold text-xs hover:bg-red-600 transition-colors"
                                             >
-                                                🗑️ ลบ
+                                                🗑️
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* ===== PAGINATION ===== */}
@@ -1062,9 +1081,9 @@ export default function AdminBooksPage() {
 
             {/* ===== CONFIRM DELETE MODAL ===== */}
             {confirmOpen && confirmTarget && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                    <div className="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-100 shadow-2xl">
-                        <h3 className="text-xl font-bold text-red-600 mb-2">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+                    <div className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-md border border-slate-100 shadow-2xl">
+                        <h3 className="text-lg sm:text-xl font-bold text-red-600 mb-2">
                             ยืนยันการลบหนังสือ
                         </h3>
                         <p className="text-sm font-medium text-slate-800">
@@ -1079,7 +1098,7 @@ export default function AdminBooksPage() {
                                     setConfirmOpen(false);
                                     setConfirmTarget(null);
                                 }}
-                                className="px-4 py-2 rounded-xl border font-semibold text-slate-900 hover:bg-slate-50"
+                                className="px-4 py-2 rounded-xl border font-semibold text-sm text-slate-900 hover:bg-slate-50"
                             >
                                 ยกเลิก
                             </button>
@@ -1090,7 +1109,7 @@ export default function AdminBooksPage() {
                                     setConfirmTarget(null);
                                     await deleteBook(id);
                                 }}
-                                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700"
+                                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700"
                             >
                                 ลบหนังสือ
                             </button>

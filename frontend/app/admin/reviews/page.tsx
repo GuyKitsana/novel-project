@@ -222,9 +222,15 @@ export default function AdminReviewsPage() {
               {pagedReviews.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-3 py-8 text-center align-middle">
-                    <p className="text-slate-500 font-medium">
-                      {search ? "ไม่พบรีวิวที่ค้นหา" : "ยังไม่มีรีวิว"}
-                    </p>
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-3xl">📝</span>
+                      <p className="text-slate-500 font-medium">
+                        {search ? "ไม่พบรีวิว" : "ยังไม่มีรีวิว"}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {search ? "ลองเปลี่ยนคำค้นหา" : "เมื่อมีผู้ใช้รีวิว จะปรากฏที่นี่"}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -234,18 +240,18 @@ export default function AdminReviewsPage() {
                     className="border-b border-slate-100 hover:bg-orange-50 transition-colors"
                   >
                     <td className="pl-6 pr-3 py-3 align-middle">
-                      <div className="font-semibold text-base text-slate-900">
+                      <div className="font-semibold text-base text-slate-900 truncate max-w-xs">
                         {r.book_title || "-"}
                       </div>
                     </td>
 
-                    <td className="px-3 py-3 text-center align-middle">
-                      <span className="font-medium text-slate-700">
+                    <td className="px-3 py-3 text-center align-middle whitespace-nowrap">
+                      <span className="font-medium text-slate-700 truncate max-w-xs inline-block">
                         {r.username || "-"}
                       </span>
                     </td>
 
-                    <td className="px-3 py-3 text-center align-middle">
+                    <td className="px-3 py-3 text-center align-middle whitespace-nowrap">
                       <div className="flex justify-center">
                         <span className="text-sm font-medium text-orange-600">
                           {renderStars(r.rating)}
@@ -253,19 +259,19 @@ export default function AdminReviewsPage() {
                       </div>
                     </td>
 
-                    <td className="px-3 py-3 text-center align-middle">
-                      <p className="line-clamp-2 text-xs font-normal text-slate-600 max-w-xs mx-auto">
+                    <td className="px-3 py-3 align-middle">
+                      <p className="line-clamp-2 text-xs font-normal text-slate-600 max-w-xs">
                         {r.comment || "-"}
                       </p>
                     </td>
 
-                    <td className="px-3 py-3 text-center align-middle">
+                    <td className="px-3 py-3 text-center align-middle whitespace-nowrap">
                       <span className="text-xs font-medium text-slate-500">
                         {formatDate(r.created_at)}
                       </span>
                     </td>
 
-                    <td className="px-3 py-3 text-center align-middle">
+                    <td className="px-3 py-3 text-center align-middle whitespace-nowrap">
                       <div className="flex justify-center items-center gap-1.5">
                         <button
                           onClick={() => {
@@ -289,9 +295,15 @@ export default function AdminReviewsPage() {
         <div className="md:hidden bg-white rounded-3xl shadow border border-orange-100 overflow-hidden">
           {pagedReviews.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <p className="text-slate-500 font-medium">
-                {search ? "ไม่พบรีวิวที่ค้นหา" : "ยังไม่มีรีวิว"}
-              </p>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-3xl">📝</span>
+                <p className="text-slate-500 font-medium">
+                  {search ? "ไม่พบรีวิว" : "ยังไม่มีรีวิว"}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {search ? "ลองเปลี่ยนคำค้นหา" : "เมื่อมีผู้ใช้รีวิว จะปรากฏที่นี่"}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">
@@ -301,18 +313,13 @@ export default function AdminReviewsPage() {
                   className="p-4 hover:bg-orange-50 transition-colors"
                 >
                   <div className="space-y-3">
-                    {/* Header: Book Title & User */}
-                    <div className="flex items-start justify-between gap-2">
+                    {/* Top row: Book Title + Delete Button */}
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         {r.book_title && (
-                          <h3 className="font-semibold text-base text-slate-900 mb-1 truncate">
+                          <h3 className="font-semibold text-base text-slate-900 truncate">
                             {r.book_title}
                           </h3>
-                        )}
-                        {r.username && (
-                          <p className="text-sm text-slate-600 truncate">
-                            โดย {r.username}
-                          </p>
                         )}
                       </div>
                       <button
@@ -326,7 +333,14 @@ export default function AdminReviewsPage() {
                       </button>
                     </div>
 
-                    {/* Rating */}
+                    {/* Second row: Username */}
+                    {r.username && (
+                      <p className="text-sm text-slate-600 truncate">
+                        โดย {r.username}
+                      </p>
+                    )}
+
+                    {/* Rating row */}
                     <div className="flex items-center gap-2">
                       <span className="text-base font-medium text-orange-600">
                         {renderStars(r.rating)}
@@ -343,7 +357,7 @@ export default function AdminReviewsPage() {
                       </p>
                     )}
 
-                    {/* Date */}
+                    {/* Bottom row: Date */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-slate-500">
                         {formatDate(r.created_at)}
@@ -530,13 +544,13 @@ export default function AdminReviewsPage() {
               ใช่ไหม?
             </p>
 
-            <div className="flex justify-end gap-2 mt-6">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-6">
               <button
                 onClick={() => {
                   setConfirmOpen(false);
                   setConfirmTarget(null);
                 }}
-                className="px-4 py-2 rounded-xl border font-semibold text-sm text-slate-900 hover:bg-slate-50"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl border font-semibold text-sm text-slate-900 hover:bg-slate-50"
               >
                 ยกเลิก
               </button>
@@ -547,7 +561,7 @@ export default function AdminReviewsPage() {
                   setConfirmTarget(null);
                   await handleDeleteReview(id);
                 }}
-                className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-red-600 text-white font-semibold text-sm hover:bg-red-700"
               >
                 ลบรีวิว
               </button>
