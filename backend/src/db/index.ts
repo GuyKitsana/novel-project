@@ -9,16 +9,20 @@ const getDbConfig = () => {
   if (!connectionString) {
     throw new Error("DATABASE_URL is required");
   }
-  
+
+  const isProd = process.env.NODE_ENV === "production";
+
   return {
     connectionString,
+    // Render Postgres requires SSL in production
+    ssl: isProd ? { rejectUnauthorized: false } : undefined,
   };
 };
 
 export const pool = new Pool(getDbConfig());
 
 // Handle pool errors (prevents crashes from connection issues)
-pool.on("error", (err, client) => {
+pool.on("error", (err) => {
   console.error("Unexpected error on idle database client", err);
   // Don't exit - let the pool handle reconnection
 });
