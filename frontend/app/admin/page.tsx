@@ -242,23 +242,23 @@ export default function AdminDashboardPage() {
     <main className="min-h-screen bg-orange-50">
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-20 bg-white border-b border-orange-100">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-2">
           
           {/* LOGO */}
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-orange-400 text-white flex items-center justify-center font-extrabold shadow">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="h-9 w-9 rounded-xl bg-orange-400 text-white flex items-center justify-center font-extrabold shadow flex-shrink-0">
               N
             </div>
-            <div>
-              <p className="font-extrabold text-slate-900">
+            <div className="min-w-0">
+              <p className="font-extrabold text-slate-900 text-sm sm:text-base truncate">
                 Novel Recommender
               </p>
-              <p className="text-xs text-slate-500">Admin Panel</p>
+              <p className="hidden sm:block text-xs text-slate-500">Admin Panel</p>
             </div>
           </div>
 
           {/* ================= ADMIN AVATAR ================= */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative flex-shrink-0" ref={dropdownRef}>
             <button
               type="button"
               onClick={() => setOpen(o => !o)}
@@ -270,19 +270,19 @@ export default function AdminDashboardPage() {
 
             {/* DROPDOWN */}
             {open && (
-              <div className="absolute right-0 mt-3 w-64 rounded-2xl bg-white
-                shadow-xl border border-orange-100 p-4">
+              <div className="absolute right-0 mt-3 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-white
+                shadow-xl border border-orange-100 p-4 z-50">
                 
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-orange-400 flex items-center justify-center">
+                  <div className="h-10 w-10 rounded-full bg-orange-400 flex items-center justify-center flex-shrink-0">
                     👑
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-orange-500">
                       ผู้ดูแลระบบ
                     </p>
-                    <p className="text-sm font-extrabold text-slate-900">{user.username}</p>
-                    <p className="text-xs text-slate-900">{user.email}</p>
+                    <p className="text-sm font-extrabold text-slate-900 truncate">{user.username}</p>
+                    <p className="text-xs text-slate-900 truncate">{user.email}</p>
                   </div>
                 </div>
 
@@ -304,113 +304,113 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* ================= CONTENT ================= */}
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-8 space-y-4 sm:space-y-6">
         {/* ===== DASHBOARD CARDS (Merged Summary + Management) ===== */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <Link
             href="/admin/books"
-            className="group bg-white rounded-3xl p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
+            className="group bg-white rounded-3xl p-4 sm:p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="text-4xl">📚</div>
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="text-3xl sm:text-4xl">📚</div>
               <div className="text-right">
                 <p className="text-xs font-medium text-slate-500">ทั้งหมด</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">
                   {stats.loading ? "..." : stats.totalBooks.toLocaleString()}
                 </p>
               </div>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-500">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-orange-500">
               จัดการหนังสือ
             </h3>
-            <p className="text-sm font-medium text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-600 mt-1">
               เพิ่ม แก้ไข ลบข้อมูลนิยาย
             </p>
           </Link>
 
           <Link
             href="/admin/categories"
-            className="group bg-white rounded-3xl p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
+            className="group bg-white rounded-3xl p-4 sm:p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="text-4xl">🏷️</div>
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="text-3xl sm:text-4xl">🏷️</div>
               <div className="text-right">
                 <p className="text-xs font-medium text-slate-500">ทั้งหมด</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">
                   {stats.loading ? "..." : stats.totalCategories.toLocaleString()}
                 </p>
               </div>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-500">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-orange-500">
               หมวดหมู่
             </h3>
-            <p className="text-sm font-medium text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-600 mt-1">
               จัดการหมวดหมู่นิยาย
             </p>
           </Link>
 
           <Link
             href="/admin/users"
-            className="group bg-white rounded-3xl p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
+            className="group bg-white rounded-3xl p-4 sm:p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="text-4xl">👥</div>
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="text-3xl sm:text-4xl">👥</div>
               <div className="text-right">
                 <p className="text-xs font-medium text-slate-500">ทั้งหมด</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">
                   {stats.loading ? "..." : stats.totalUsers.toLocaleString()}
                 </p>
               </div>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-500">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-orange-500">
               ผู้ใช้งาน
             </h3>
-            <p className="text-sm font-medium text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-600 mt-1">
               ดูและจัดการบัญชีผู้ใช้
             </p>
           </Link>
 
           <Link
             href="/admin/reviews"
-            className="group bg-white rounded-3xl p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
+            className="group bg-white rounded-3xl p-4 sm:p-6 border border-orange-100 shadow-sm hover:shadow-xl transition"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="text-4xl">📝</div>
+            <div className="flex items-start justify-between mb-3 sm:mb-4">
+              <div className="text-3xl sm:text-4xl">📝</div>
               <div className="text-right">
                 <p className="text-xs font-medium text-slate-500">ทั้งหมด</p>
-                <p className="text-2xl font-bold text-slate-900">
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">
                   {stats.loading ? "..." : stats.totalReviews.toLocaleString()}
                 </p>
               </div>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 group-hover:text-orange-500">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-orange-500">
               จัดการรีวิว
             </h3>
-            <p className="text-sm font-medium text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-600 mt-1">
               ตรวจสอบและลบรีวิวจากผู้ใช้งาน
             </p>
           </Link>
         </section>
 
         {/* ===== QUICK ACTIONS ===== */}
-        <div className="bg-white rounded-3xl shadow border border-orange-100 p-5">
-          <h2 className="text-base font-semibold text-slate-700 mb-3">ปุ่มลัด</h2>
+        <div className="bg-white rounded-3xl shadow border border-orange-100 p-4 sm:p-5">
+          <h2 className="text-sm sm:text-base font-semibold text-slate-700 mb-3">ปุ่มลัด</h2>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => router.push("/admin/books")}
-              className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-orange-500 text-white text-xs sm:text-sm font-semibold hover:bg-orange-600 transition-colors"
             >
               ➕ เพิ่มหนังสือ
             </button>
             <button
               onClick={() => router.push("/admin/categories")}
-              className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-orange-500 text-white text-xs sm:text-sm font-semibold hover:bg-orange-600 transition-colors"
             >
               ➕ เพิ่มหมวดหมู่
             </button>
             <button
               onClick={() => router.push("/admin/users")}
-              className="px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition-colors"
+              className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-orange-500 text-white text-xs sm:text-sm font-semibold hover:bg-orange-600 transition-colors"
             >
               ➕ เพิ่มผู้ใช้
             </button>
@@ -418,27 +418,27 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ===== RECENT ACTIVITY ===== */}
-        <div className="bg-white rounded-3xl shadow border border-orange-100 p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">กิจกรรมล่าสุด</h2>
+        <div className="bg-white rounded-3xl shadow border border-orange-100 p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">กิจกรรมล่าสุด</h2>
           {activities.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm font-medium text-slate-500">ยังไม่มีกิจกรรมล่าสุด</p>
+            <div className="text-center py-6 sm:py-8">
+              <p className="text-xs sm:text-sm font-medium text-slate-500">ยังไม่มีกิจกรรมล่าสุด</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {activities.map((activity, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
                 >
-                  <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">{activity.icon}</span>
+                  <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-base sm:text-lg">{activity.icon}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
                       {activity.title}
                     </p>
-                    <p className="text-xs font-medium text-slate-500">{activity.time}</p>
+                    <p className="text-[10px] sm:text-xs font-medium text-slate-500">{activity.time}</p>
                   </div>
                 </div>
               ))}
