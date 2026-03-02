@@ -27,15 +27,15 @@ const server = app.listen(parseInt(PORT.toString()), HOST, async () => {
   console.log(`🔒 CORS enabled for: ${corsOrigins}`);
   
   // Test database connection (non-blocking)
-  if (process.env.DATABASE_URL || process.env.PGHOST) {
+  if (process.env.DATABASE_URL) {
     const dbConnected = await testConnection();
     if (dbConnected) {
       console.log(`✅ Database connected`);
     } else {
-      console.warn(`⚠️  Database connection failed - check DATABASE_URL or PG env vars`);
+      console.warn(`⚠️  Database connection failed - check DATABASE_URL`);
     }
   } else {
-    console.warn(`⚠️  DATABASE_URL or PG environment variables not set`);
+    console.warn(`⚠️  DATABASE_URL environment variable not set`);
   }
 });
 

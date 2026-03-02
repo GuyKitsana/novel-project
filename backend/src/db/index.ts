@@ -2,23 +2,16 @@ import { Pool } from "pg";
 
 /**
  * Database connection pool
- * Supports both DATABASE_URL and individual PG environment variables
+ * Requires DATABASE_URL environment variable for production safety
  */
 const getDbConfig = () => {
-  // Prefer DATABASE_URL if available
-  if (process.env.DATABASE_URL) {
-    return {
-      connectionString: process.env.DATABASE_URL,
-    };
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is required");
   }
-
-  // Fallback to individual PostgreSQL environment variables
+  
   return {
-    host: process.env.PGHOST || "localhost",
-    port: parseInt(process.env.PGPORT || "5432", 10),
-    user: process.env.PGUSER || "postgres",
-    password: process.env.PGPASSWORD || "",
-    database: process.env.PGDATABASE || "novel_db",
+    connectionString,
   };
 };
 
