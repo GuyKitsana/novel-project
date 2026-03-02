@@ -68,6 +68,8 @@ function SearchContent() {
   const [filtersReady, setFiltersReady] = useState(false);
   // Track if we've completed the initial load (to allow category param processing after initial load)
   const initialLoadCompleteRef = useRef(false);
+  // Mobile filter drawer state
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   
   // Debug: Log render state (after all state declarations)
   if (DEBUG_SEARCH) {
@@ -442,90 +444,129 @@ function SearchContent() {
     selectedAuthors.length > 0 ||
     selectedPublishers.length > 0;
 
+  // Filter Panel Component (reused for desktop sidebar and mobile drawer)
+  const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
+    <div className="bg-white rounded-xl border border-slate-200 p-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-base font-semibold text-slate-700">ตัวกรอง</h2>
+        <div className="flex items-center gap-2">
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                handleClearFilters();
+                onClose?.();
+              }}
+              className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+            >
+              ล้างทั้งหมด
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden p-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              aria-label="ปิด"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Categories Filter */}
+      <div className="mb-6">
+        <h3 className="text-sm text-slate-600 mb-3">หมวดหมู่</h3>
+        <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
+          {categories.map((cat) => (
+            <label
+              key={cat.id}
+              className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded"
+            >
+              <input
+                type="checkbox"
+                checked={selectedCategories.includes(cat.id)}
+                onChange={() => handleCategoryToggle(cat.id)}
+                className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-400"
+              />
+              <span className="text-sm text-slate-700">{cat.name}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Authors Filter */}
+      <div className="mb-6">
+        <h3 className="text-sm text-slate-600 mb-3">ผู้แต่ง</h3>
+        <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
+          {authors.slice(0, 50).map((author) => (
+            <label
+              key={author}
+              className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded"
+            >
+              <input
+                type="checkbox"
+                checked={selectedAuthors.includes(author)}
+                onChange={() => handleAuthorToggle(author)}
+                className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-400"
+              />
+              <span className="text-sm text-slate-700">{author}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Publishers Filter */}
+      <div className="mb-6">
+        <h3 className="text-sm text-slate-600 mb-3">สำนักพิมพ์</h3>
+        <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
+          {publishers.slice(0, 50).map((publisher) => (
+            <label
+              key={publisher}
+              className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded"
+            >
+              <input
+                type="checkbox"
+                checked={selectedPublishers.includes(publisher)}
+                onChange={() => handlePublisherToggle(publisher)}
+                className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-400"
+              />
+              <span className="text-sm text-slate-700">{publisher}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      {/* Left: Filter Panel */}
-      <aside className="lg:w-[260px] flex-shrink-0">
-        <div className="bg-white rounded-xl border border-slate-200 p-4 sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-slate-700">ตัวกรอง</h2>
-            {hasActiveFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-              >
-                ล้างทั้งหมด
-              </button>
-            )}
-          </div>
-
-          {/* Categories Filter */}
-          <div className="mb-6">
-            <h3 className="text-sm text-slate-600 mb-3">หมวดหมู่</h3>
-            <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
-              {categories.map((cat) => (
-                <label
-                  key={cat.id}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.includes(cat.id)}
-                    onChange={() => handleCategoryToggle(cat.id)}
-                    className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-400"
-                  />
-                  <span className="text-sm text-slate-700">{cat.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Authors Filter */}
-          <div className="mb-6">
-            <h3 className="text-sm text-slate-600 mb-3">ผู้แต่ง</h3>
-            <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
-              {authors.slice(0, 50).map((author) => (
-                <label
-                  key={author}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAuthors.includes(author)}
-                    onChange={() => handleAuthorToggle(author)}
-                    className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-400"
-                  />
-                  <span className="text-sm text-slate-700">{author}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Publishers Filter */}
-          <div className="mb-6">
-            <h3 className="text-sm text-slate-600 mb-3">สำนักพิมพ์</h3>
-            <div className="max-h-[360px] overflow-y-auto pr-2 space-y-2">
-              {publishers.slice(0, 50).map((publisher) => (
-                <label
-                  key={publisher}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedPublishers.includes(publisher)}
-                    onChange={() => handlePublisherToggle(publisher)}
-                    className="w-4 h-4 text-orange-500 border-slate-300 rounded focus:ring-orange-400"
-                  />
-                  <span className="text-sm text-slate-700">{publisher}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
+      {/* Left: Filter Panel (Desktop Only) */}
+      <aside className="hidden lg:block lg:w-[260px] flex-shrink-0">
+        <FilterPanel />
       </aside>
 
       {/* Right: Results */}
       <div className="flex-1 min-w-0">
+        {/* Mobile Filter Button */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setMobileFilterOpen(true)}
+            className="w-full px-4 py-3 rounded-xl bg-white border border-orange-300 text-orange-600 font-semibold hover:bg-orange-50 transition-colors flex items-center justify-center gap-2 shadow-sm"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            ตัวกรอง
+            {hasActiveFilters && (
+              <span className="px-2 py-0.5 rounded-full bg-orange-500 text-white text-xs font-bold">
+                {selectedCategories.length + selectedAuthors.length + selectedPublishers.length + (searchQuery.trim() ? 1 : 0)}
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* Search Form */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 md:p-6 mb-6">
           <form
@@ -628,6 +669,28 @@ function SearchContent() {
           </>
         )}
       </div>
+
+      {/* Mobile Filter Drawer */}
+      {mobileFilterOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-200"
+            onClick={() => setMobileFilterOpen(false)}
+          />
+          {/* Bottom Sheet */}
+          <div className="fixed inset-x-0 bottom-0 z-50 lg:hidden bg-white rounded-t-3xl shadow-2xl max-h-[85vh] overflow-hidden flex flex-col transition-transform duration-300 ease-out">
+            {/* Handle Bar */}
+            <div className="flex items-center justify-center pt-3 pb-2">
+              <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
+            </div>
+            {/* Filter Panel */}
+            <div className="flex-1 overflow-y-auto px-4 pb-6">
+              <FilterPanel onClose={() => setMobileFilterOpen(false)} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
