@@ -17,11 +17,17 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     setProfileOpen(false);
+    setMobileMenuOpen(false);
     router.replace("/");
+  };
+
+  const handleLinkClick = () => {
+    setMobileMenuOpen(false);
   };
 
   const isAdmin = user?.role === "admin";
@@ -104,8 +110,19 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
           )}
         </nav>
 
-        {/* Auth */}
+        {/* Auth & Mobile Menu Button */}
         <div className="flex items-center gap-4">
+          {/* Hamburger Menu Button (Mobile Only) */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-xl text-slate-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+            aria-label="เปิดเมนู"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
           {!user && (
             <>
               <Link
@@ -225,6 +242,80 @@ export default function Navbar({ showBackButton = false }: NavbarProps) {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-orange-100 bg-white shadow-lg transition-all duration-200 ease-in-out">
+          <nav className="max-w-6xl mx-auto px-4 py-4 space-y-2">
+            <Link
+              href="/"
+              onClick={handleLinkClick}
+              className={`block px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                isActive("/")
+                  ? "bg-orange-50 text-orange-600 font-semibold"
+                  : "text-slate-700 hover:bg-orange-50 hover:text-orange-500"
+              }`}
+            >
+              หน้าแรก
+            </Link>
+            <Link
+              href="/search"
+              onClick={handleLinkClick}
+              className={`block px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                isActive("/search")
+                  ? "bg-orange-50 text-orange-600 font-semibold"
+                  : "text-slate-700 hover:bg-orange-50 hover:text-orange-500"
+              }`}
+            >
+              นิยายทั้งหมด
+            </Link>
+            <Link
+              href="/recommend"
+              onClick={handleLinkClick}
+              className={`block px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                isActive("/recommend")
+                  ? "bg-orange-50 text-orange-600 font-semibold"
+                  : "text-slate-700 hover:bg-orange-50 hover:text-orange-500"
+              }`}
+            >
+              แนะนำสำหรับคุณ
+            </Link>
+            {user && (
+              <Link
+                href="/favorites"
+                onClick={handleLinkClick}
+                className={`block px-4 py-3 rounded-2xl text-sm font-medium transition-colors ${
+                  isActive("/favorites")
+                    ? "bg-orange-50 text-orange-600 font-semibold"
+                    : "text-slate-700 hover:bg-orange-50 hover:text-orange-500"
+                }`}
+              >
+                บุ๊กมาร์ก
+              </Link>
+            )}
+            {!user && (
+              <>
+                <div className="pt-2 border-t border-orange-100 mt-2 space-y-2">
+                  <Link
+                    href="/auth/login"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 rounded-2xl border border-orange-300 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 text-center transition-colors"
+                  >
+                    เข้าสู่ระบบ
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    onClick={handleLinkClick}
+                    className="block px-4 py-3 rounded-2xl bg-orange-500 text-sm font-medium text-white hover:bg-orange-600 text-center transition-colors"
+                  >
+                    ลงทะเบียน
+                  </Link>
+                </div>
+              </>
+            )}
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
