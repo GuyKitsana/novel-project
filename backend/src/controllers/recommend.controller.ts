@@ -29,13 +29,6 @@ export const getRecommendationsForMe = async (
     const limit = Number(req.query.limit) || 20;
     const behaviorRatio = Number(req.query.behaviorRatio) || 0.7;
 
-    // DEBUG: Always log request parameters
-    console.log("[RECOMMEND DEBUG] Request params:", {
-      userId,
-      limit,
-      behaviorRatio,
-    });
-
     const recommendations = await getPersonalizedRecommendations(
       userId,
       Math.max(1, Math.min(50, limit)),
@@ -44,14 +37,6 @@ export const getRecommendationsForMe = async (
 
     // Ensure we always return an array (defensive check)
     const items = Array.isArray(recommendations) ? recommendations : [];
-    
-    // DEBUG: Always log response
-    console.log("[RECOMMEND DEBUG] Controller response:", {
-      userId,
-      itemsCount: items.length,
-      firstBookId: items[0]?.id || null,
-      allBookIds: items.map((item: any) => item.id),
-    });
     
     return res.json({ items });
   } catch (err: any) {
