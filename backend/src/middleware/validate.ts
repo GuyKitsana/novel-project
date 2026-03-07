@@ -31,11 +31,13 @@ export const validateBody = (schema: ZodSchema) => {
       req.body = parsedBody;
       
       if (isOnboardingCategories) {
+        // Type assertion for logging - parsedBody is validated by Zod schema
+        const typedBody = parsedBody as { favoriteCategories?: string[] };
         console.log("[ONBOARDING VALIDATION] Step 2: Validation successful:", {
           path: req.path,
           parsedBody: parsedBody,
-          favoriteCategories: parsedBody.favoriteCategories,
-          favoriteCategoriesCount: Array.isArray(parsedBody.favoriteCategories) ? parsedBody.favoriteCategories.length : 0,
+          favoriteCategories: typedBody.favoriteCategories,
+          favoriteCategoriesCount: Array.isArray(typedBody.favoriteCategories) ? typedBody.favoriteCategories.length : 0,
           timestamp: new Date().toISOString(),
         });
       }

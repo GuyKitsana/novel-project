@@ -103,7 +103,7 @@ export const saveCategories = async (
       requestedCodes: favoriteCategories,
       foundCodes: categoryCodesCheck.rows.map((r: any) => ({ code: r.code, id: r.id, name: r.name })),
       foundCount: categoryCodesCheck.rows.length,
-      missingCodes: favoriteCategories.filter(code => 
+      missingCodes: favoriteCategories.filter((code: string) => 
         !categoryCodesCheck.rows.some((r: any) => r.code === code)
       ),
       timestamp: new Date().toISOString(),
