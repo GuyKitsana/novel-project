@@ -808,7 +808,64 @@ async function getRandomRecommendations(
 }
 
 /**
- * ดึงหนังสือยอดนิยมจากทุกหมวดหมู่ (fallback ที่รับประกัน)
+ * ดึงหนังสือยอดนิยมจากหมวดหมู่ที่ผู้ใช้เลือก (fallback แรกสำหรับผู้ใช้ที่มีหมวดหมู่)
+ * ใช้ popularity score: (favorites_count * 3) + (reviews_count * 2) + avg_rating
+ * แต่กรองเฉพาะหนังสือในหมวดหมู่ที่ผู้ใช้เลือก
+ */
+async function getPopularInCategories(
+  userCategoryIds: Set<number>,
+  excludeBookIds: Set<number>,
+  limit: number
+): Promise<Array<{ bookId: number; reason: string }>> {
+  if (userCategoryIds.size === 0) {
+    return [];
+  }
+
+  const categoryArray = Array.from(userCategoryIds);
+  const excludeArray = Array.from(excludeBookIds);
+  
+  const excludeCondition = excludeArray.length > 0
+    ? `AND b.id NOT IN (${excludeArray.map((_, i) => `$${categoryArray.length + i + 1}`).join(", ")})`
+    : "";
+
+  const params = [...categoryArray, ...excludeArray];
+
+  const result = await query(
+    `
+    SELECT DISTINCT b.id
+    FROM books b
+    INNER JOIN book_categories bc ON bc.book_id = b.id
+    LEFT JOIN reviews r ON r.book_id = b.id
+    LEFT JOIN favorites f ON f.book_id = b.id
+    WHERE bc.category_id = ANY($1::int[])
+      ${excludeCondition}
+    GROUP BY b.id
+    ORDER BY
+      (
+        COALESCE(COUNT(DISTINCT f.user_id), 0) * 3 +
+        COALESCE(COUNT(DISTINCT r.id), 0) * 2 +
+        COALESCE(AVG(r.rating), 0)
+      ) DESC,
+      b.created_at DESC
+    LIMIT $${params.length + 1}
+    `,
+    [...params, limit]
+  );
+
+  console.log("[RECOMMEND DEBUG] Popular in categories fallback results:", {
+    categoryIds: categoryArray,
+    rowsReturned: result.rows.length,
+    bookIds: result.rows.map((r: any) => Number(r.id)),
+  });
+
+  return result.rows.map((row: any) => ({
+    bookId: Number(row.id),
+    reason: "popular_in_your_categories",
+  }));
+}
+
+/**
+ * ดึงหนังสือยอดนิยมจากทุกหมวดหมู่ (fallback สุดท้าย - ใช้เมื่อไม่มีหมวดหมู่หรือไม่มีหนังสือในหมวดหมู่)
  * ใช้ popularity score: (favorites_count * 3) + (reviews_count * 2) + avg_rating
  */
 async function getPopularAll(
@@ -1089,19 +1146,41 @@ export async function getPersonalizedRecommendations(
       }
     }
 
-    // FALLBACK ที่รับประกัน: ถ้า behavior + discovery คืนค่า 0 ผลลัพธ์ ใช้ popular all
+    // FALLBACK ที่รับประกัน: ถ้า behavior + discovery คืนค่า 0 ผลลัพธ์
+    // ถ้าผู้ใช้มีหมวดหมู่ ให้ลอง popular ในหมวดหมู่ก่อน แล้วค่อยใช้ popular all
     if (results.length === 0) {
-      console.log("[RECOMMEND DEBUG] Behavior + Discovery returned 0 results, using popular_all fallback");
-      try {
-        const popularResults = await getPopularAll(excludeBookIds, limit);
-        for (const item of popularResults) {
-          if (!usedBookIds.has(item.bookId)) {
-            results.push({ ...item, similarity: undefined });
-            usedBookIds.add(item.bookId);
+      console.log("[RECOMMEND DEBUG] Behavior + Discovery returned 0 results, trying category-based fallback first");
+      if (hasCategories) {
+        try {
+          const popularInCategoriesResults = await getPopularInCategories(userCategories, excludeBookIds, limit);
+          if (popularInCategoriesResults.length > 0) {
+            console.log("[RECOMMEND DEBUG] Found popular books in user categories, using them");
+            for (const item of popularInCategoriesResults) {
+              if (!usedBookIds.has(item.bookId)) {
+                results.push({ ...item, similarity: undefined });
+                usedBookIds.add(item.bookId);
+              }
+            }
           }
+        } catch (categoryFallbackErr) {
+          console.error("[getPersonalizedRecommendations] Error in popular_in_categories fallback:", categoryFallbackErr);
         }
-      } catch (fallbackErr) {
-        console.error("[getPersonalizedRecommendations] Error in popular_all fallback (behavior path):", fallbackErr);
+      }
+      
+      // ถ้ายังไม่มีผลลัพธ์ ให้ใช้ popular all เป็น fallback สุดท้าย
+      if (results.length === 0) {
+        console.log("[RECOMMEND DEBUG] No category-based fallback results, using global popular_all fallback");
+        try {
+          const popularResults = await getPopularAll(excludeBookIds, limit);
+          for (const item of popularResults) {
+            if (!usedBookIds.has(item.bookId)) {
+              results.push({ ...item, similarity: undefined });
+              usedBookIds.add(item.bookId);
+            }
+          }
+        } catch (fallbackErr) {
+          console.error("[getPersonalizedRecommendations] Error in popular_all fallback (behavior path):", fallbackErr);
+        }
       }
     }
   } else {
@@ -1161,8 +1240,36 @@ export async function getPersonalizedRecommendations(
           }
         }
 
+        // FALLBACK: ถ้ายังไม่มีผลลัพธ์หรือมีไม่พอ ให้เติมด้วย popular ในหมวดหมู่
+        if (results.length < limit) {
+          const remaining = limit - results.length;
+          console.log("[RECOMMEND DEBUG] Stage 1+2 returned insufficient results, filling with popular books in user categories");
+          try {
+            const popularInCategoriesResults = await getPopularInCategories(
+              userCategories,
+              new Set([...excludeBookIds, ...usedBookIds]),
+              remaining
+            );
+            if (popularInCategoriesResults.length > 0) {
+              console.log("[RECOMMEND DEBUG] Popular in categories fallback added:", {
+                addedCount: popularInCategoriesResults.length,
+                bookIds: popularInCategoriesResults.map(r => r.bookId),
+              });
+              for (const item of popularInCategoriesResults) {
+                if (!usedBookIds.has(item.bookId) && results.length < limit) {
+                  results.push({ ...item, similarity: undefined });
+                  usedBookIds.add(item.bookId);
+                }
+              }
+            }
+          } catch (categoryFallbackErr) {
+            console.error("[getPersonalizedRecommendations] Error in popular_in_categories fallback:", categoryFallbackErr);
+          }
+        }
+
+        // FALLBACK สุดท้าย: ถ้ายังไม่มีผลลัพธ์เลย ให้ใช้ popular all (เฉพาะเมื่อไม่มีผลลัพธ์จากหมวดหมู่เลย)
         if (results.length === 0 && !hadCategoryBasedResults) {
-          console.log("[RECOMMEND DEBUG] Stage 1+2 returned 0 results (no books in user categories), using popular_all fallback");
+          console.log("[RECOMMEND DEBUG] No category-based results at all, using global popular_all fallback");
           try {
             const popularResults = await getPopularAll(excludeBookIds, limit);
             for (const item of popularResults) {
@@ -1176,23 +1283,42 @@ export async function getPersonalizedRecommendations(
           }
         } else if (results.length === 0 && hadCategoryBasedResults) {
           // ไม่ควรเกิดขึ้น แต่ถ้าเกิดขึ้น ให้ log
-          if (process.env.NODE_ENV !== "production") {
-            console.warn("[RECOMMEND DEBUG] Stage 1+2 had results but results array is empty - unexpected state");
-          }
+          console.warn("[RECOMMEND DEBUG] Stage 1+2 had results but results array is empty - unexpected state");
         }
       } catch (err) {
         console.error("[getPersonalizedRecommendations] Error in category-based recommendations:", err);
         if (results.length === 0) {
-          try {
-            const popularResults = await getPopularAll(excludeBookIds, limit);
-            for (const item of popularResults) {
-              if (!usedBookIds.has(item.bookId)) {
-                results.push({ ...item, similarity: undefined });
-                usedBookIds.add(item.bookId);
+          // ถ้ามี error และยังไม่มีผลลัพธ์ ให้ลอง popular ในหมวดหมู่ก่อน
+          if (hasCategories) {
+            try {
+              const popularInCategoriesResults = await getPopularInCategories(userCategories, excludeBookIds, limit);
+              if (popularInCategoriesResults.length > 0) {
+                console.log("[RECOMMEND DEBUG] Error occurred, using popular_in_categories fallback");
+                for (const item of popularInCategoriesResults) {
+                  if (!usedBookIds.has(item.bookId)) {
+                    results.push({ ...item, similarity: undefined });
+                    usedBookIds.add(item.bookId);
+                  }
+                }
               }
+            } catch (categoryFallbackErr) {
+              console.error("[getPersonalizedRecommendations] Error in popular_in_categories fallback after error:", categoryFallbackErr);
             }
-          } catch (fallbackErr) {
-            console.error("[getPersonalizedRecommendations] Error in popular_all fallback after error:", fallbackErr);
+          }
+          
+          // ถ้ายังไม่มีผลลัพธ์ ให้ใช้ popular all เป็น fallback สุดท้าย
+          if (results.length === 0) {
+            try {
+              const popularResults = await getPopularAll(excludeBookIds, limit);
+              for (const item of popularResults) {
+                if (!usedBookIds.has(item.bookId)) {
+                  results.push({ ...item, similarity: undefined });
+                  usedBookIds.add(item.bookId);
+                }
+              }
+            } catch (fallbackErr) {
+              console.error("[getPersonalizedRecommendations] Error in popular_all fallback after error:", fallbackErr);
+            }
           }
         }
       }
@@ -1246,7 +1372,7 @@ export async function getPersonalizedRecommendations(
         reason: item.reason,
       });
       // ติดตามว่ามาจากการแนะนำ category-based หรือไม่
-      if (item.reason === "from_your_categories" || item.reason === "discovery") {
+      if (item.reason === "from_your_categories" || item.reason === "discovery" || item.reason === "popular_in_your_categories") {
         categoryBasedBookIds.add(item.bookId);
       }
     }
@@ -1378,23 +1504,36 @@ export async function getPersonalizedRecommendations(
         }
         finalResults = rankedBooks.slice(0, limit);
       } else {
-        // ไม่มีผลลัพธ์ก่อน post-process เลย - ใช้ global fallback
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[RECOMMEND DEBUG] No pre-processed results, using global fallback");
-        }
+        // ไม่มีผลลัพธ์ก่อน post-process เลย - ใช้ fallback
+        console.log("[RECOMMEND DEBUG] No pre-processed results, using fallback");
         try {
-          const popularResults = await getPopularAll(excludeBookIds, limit);
-          if (popularResults.length > 0) {
-            const popularBookIds = popularResults.map(r => r.bookId);
-            const popularBooksMap = await fetchBooksWithMetadata(popularBookIds);
-            finalResults = Array.from(popularBooksMap.values()).slice(0, limit);
-          } else {
-            // ทางเลือกสุดท้าย: ดึงหนังสือล่าสุด
-            const latestResults = await getLatestBooks(excludeBookIds, limit);
-            if (latestResults.length > 0) {
-              const latestBookIds = latestResults.map(r => r.bookId);
-              const latestBooksMap = await fetchBooksWithMetadata(latestBookIds);
-              finalResults = Array.from(latestBooksMap.values()).slice(0, limit);
+          // ถ้าผู้ใช้มีหมวดหมู่ ให้ลอง popular ในหมวดหมู่ก่อน
+          if (hasCategories) {
+            const popularInCategoriesResults = await getPopularInCategories(userCategories, excludeBookIds, limit);
+            if (popularInCategoriesResults.length > 0) {
+              console.log("[RECOMMEND DEBUG] Using popular_in_categories fallback in post-processing");
+              const popularBookIds = popularInCategoriesResults.map(r => r.bookId);
+              const popularBooksMap = await fetchBooksWithMetadata(popularBookIds);
+              finalResults = Array.from(popularBooksMap.values()).slice(0, limit);
+            }
+          }
+          
+          // ถ้ายังไม่มีผลลัพธ์ ให้ใช้ global popular all
+          if (finalResults.length === 0) {
+            const popularResults = await getPopularAll(excludeBookIds, limit);
+            if (popularResults.length > 0) {
+              console.log("[RECOMMEND DEBUG] Using global popular_all fallback in post-processing");
+              const popularBookIds = popularResults.map(r => r.bookId);
+              const popularBooksMap = await fetchBooksWithMetadata(popularBookIds);
+              finalResults = Array.from(popularBooksMap.values()).slice(0, limit);
+            } else {
+              // ทางเลือกสุดท้าย: ดึงหนังสือล่าสุด
+              const latestResults = await getLatestBooks(excludeBookIds, limit);
+              if (latestResults.length > 0) {
+                const latestBookIds = latestResults.map(r => r.bookId);
+                const latestBooksMap = await fetchBooksWithMetadata(latestBookIds);
+                finalResults = Array.from(latestBooksMap.values()).slice(0, limit);
+              }
             }
           }
         } catch (fallbackErr) {
