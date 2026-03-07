@@ -1503,26 +1503,36 @@ export async function getPersonalizedRecommendations(
     );
 
     // ใช้ top-K category diversity (post-process หลังจาก series dedupe)
-    // จำกัดหมวดหมู่เฉพาะ top 10; เติมตำแหน่งที่เหลือตามปกติ
+    // CRITICAL: Skip category diversity for cold start users to preserve category-based results
+    // Diversity filtering is only useful for users with behavior who need balanced recommendations
     let finalResults = afterSeriesResults;
-    try {
-      // ดึง category ID สำหรับหนังสือที่ผ่าน series dedupe แล้ว
-      const bookIdsForCategoryCheck = afterSeriesResults.map(b => b.id);
-      const categoryIdsByBookId = await fetchCategoryIdsByBookIds(bookIdsForCategoryCheck);
+    
+    // Only apply category diversity for users with behavior (favorites/reviews)
+    // Cold start users (hasCategories && !hasBehavior) should get all category-based results preserved
+    if (hasBehavior) {
+      try {
+        // ดึง category ID สำหรับหนังสือที่ผ่าน series dedupe แล้ว
+        const bookIdsForCategoryCheck = afterSeriesResults.map(b => b.id);
+        const categoryIdsByBookId = await fetchCategoryIdsByBookIds(bookIdsForCategoryCheck);
 
-      // ใช้ top-K category diversity (จำกัดเฉพาะใน top 10)
-      finalResults = applyTopKCategoryDiversity({
-        ranked: afterSeriesResults,
-        categoryIdsByBookId,
-        seenBookIds: seenBookIds ?? new Set<number>(),
-        limit,
-        topK: DEFAULT_TOP_K,
-        maxPerCategoryInTopK: DEFAULT_MAX_PER_CATEGORY_IN_TOP_K,
-      });
-    } catch (err) {
-      console.error("[getPersonalizedRecommendations] Error applying category diversity:", err);
-      // ดำเนินต่อด้วย afterSeriesResults ถ้า category diversity ล้มเหลว (graceful degradation)
-      finalResults = afterSeriesResults;
+        // ใช้ top-K category diversity (จำกัดเฉพาะใน top 10) - only for users with behavior
+        finalResults = applyTopKCategoryDiversity({
+          ranked: afterSeriesResults,
+          categoryIdsByBookId,
+          seenBookIds: seenBookIds ?? new Set<number>(),
+          limit,
+          topK: DEFAULT_TOP_K,
+          maxPerCategoryInTopK: DEFAULT_MAX_PER_CATEGORY_IN_TOP_K,
+        });
+        console.log("[RECOMMEND DEBUG] Applied category diversity (user has behavior)");
+      } catch (err) {
+        console.error("[getPersonalizedRecommendations] Error applying category diversity:", err);
+        // ดำเนินต่อด้วย afterSeriesResults ถ้า category diversity ล้มเหลว (graceful degradation)
+        finalResults = afterSeriesResults;
+      }
+    } else {
+      // Cold start users: Skip diversity filtering to preserve all category-based results
+      console.log("[RECOMMEND DEBUG] Skipping category diversity for cold start user (preserving all category-based results)");
     }
 
     // DEBUG: Log post-processing results

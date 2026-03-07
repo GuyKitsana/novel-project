@@ -176,18 +176,25 @@ export default function OnboardingCategoriesPage() {
     setError(null);
 
     // DEBUG: Log categories being sent from frontend
-    console.log("[ONBOARDING DEBUG] Categories being sent to backend:", {
+    console.log("[ONBOARDING FRONTEND] Step 1: Categories being sent to backend:", {
       userId: user?.id,
       favoriteCategories: selected,
       count: selected.length,
+      timestamp: new Date().toISOString(),
     });
 
     try {
-      await apiPut(
+      const response = await apiPut(
         "/onboarding/categories",
         { favoriteCategories: selected },
         true
       );
+      
+      console.log("[ONBOARDING FRONTEND] Step 2: API call successful:", {
+        userId: user?.id,
+        response,
+        timestamp: new Date().toISOString(),
+      });
 
       // ✅ CRITICAL: Update both localStorage AND AuthContext state
       // This ensures Home page sees updated user data immediately (no flicker)

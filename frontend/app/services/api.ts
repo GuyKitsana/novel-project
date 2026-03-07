@@ -66,15 +66,35 @@ async function request(path: string, options: ApiOptions = {}) {
   // Safe path joining
   const fullUrl = joinPath(API_URL, path);
 
-  if (DEBUG) {
-    console.log(`[API request] ${method} ${fullUrl}`, { auth, hasBody: !!body });
+  // Enhanced logging for onboarding categories endpoint
+  const isOnboardingCategories = path === "/onboarding/categories" && method === "PUT";
+  
+  if (DEBUG || isOnboardingCategories) {
+    console.log(`[API request] ${method} ${fullUrl}`, { 
+      auth, 
+      hasBody: !!body,
+      bodyContent: isOnboardingCategories ? body : undefined,
+    });
   }
 
   try {
+    const requestBody = isFormData ? body : body ? JSON.stringify(body) : undefined;
+    
+    if (isOnboardingCategories) {
+      console.log("[ONBOARDING API] Step 1: Request payload being sent:", {
+        path,
+        method,
+        body: body,
+        stringifiedBody: requestBody,
+        hasAuth: auth,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
     const response = await fetch(fullUrl, {
       method,
       headers,
-      body: isFormData ? body : body ? JSON.stringify(body) : undefined,
+      body: requestBody,
     });
 
     // Try to read response as text first (to handle both JSON and plain text)
@@ -97,8 +117,17 @@ async function request(path: string, options: ApiOptions = {}) {
       }
     }
 
-    if (DEBUG) {
+    if (DEBUG || isOnboardingCategories) {
       console.log(`[API response] ${method} ${fullUrl} - ${response.status} ${response.statusText}`);
+      
+      if (isOnboardingCategories) {
+        console.log("[ONBOARDING API] Step 2: Response received:", {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     // error จาก backend

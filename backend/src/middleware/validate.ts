@@ -12,10 +12,45 @@ const formatZodIssues = (issues: any[]) =>
  */
 export const validateBody = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Enhanced logging for onboarding categories validation
+    const isOnboardingCategories = req.path === "/onboarding/categories" && req.method === "PUT";
+    
+    if (isOnboardingCategories) {
+      console.log("[ONBOARDING VALIDATION] Step 1: Request body received (before validation):", {
+        path: req.path,
+        method: req.method,
+        rawBody: req.body,
+        bodyType: typeof req.body,
+        bodyKeys: req.body ? Object.keys(req.body) : [],
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
     try {
-      req.body = schema.parse(req.body);
+      const parsedBody = schema.parse(req.body);
+      req.body = parsedBody;
+      
+      if (isOnboardingCategories) {
+        console.log("[ONBOARDING VALIDATION] Step 2: Validation successful:", {
+          path: req.path,
+          parsedBody: parsedBody,
+          favoriteCategories: parsedBody.favoriteCategories,
+          favoriteCategoriesCount: Array.isArray(parsedBody.favoriteCategories) ? parsedBody.favoriteCategories.length : 0,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
       next();
     } catch (error) {
+      if (isOnboardingCategories) {
+        console.error("[ONBOARDING VALIDATION] Step 2: Validation failed:", {
+          path: req.path,
+          error: error,
+          rawBody: req.body,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      
       if (error instanceof ZodError) {
         return res.status(400).json({
           message: "Validation error",
