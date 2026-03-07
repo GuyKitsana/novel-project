@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { apiGet, apiPut } from "@/app/services/api";
+import { apiGet, saveUserCategories } from "@/app/services/api";
 import { useAuth } from "@/app/context/AuthContext";
 
 // DEBUG flag - enable with NEXT_PUBLIC_DEBUG=1
@@ -184,11 +184,7 @@ export default function OnboardingCategoriesPage() {
     });
 
     try {
-      const response = await apiPut(
-        "/onboarding/categories",
-        { favoriteCategories: selected },
-        true
-      );
+      const response = await saveUserCategories(selected);
       
       console.log("[ONBOARDING FRONTEND] Step 2: API call successful:", {
         userId: user?.id,

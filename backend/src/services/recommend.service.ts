@@ -643,7 +643,8 @@ async function getCategoryBasedRecommendations(
 
   if (excludeArray.length > 0) {
     queryText = `
-      SELECT DISTINCT b.id
+      SELECT DISTINCT b.id,
+        COUNT(DISTINCT CASE WHEN bc.category_id = ANY($1::int[]) THEN bc.category_id END) as matched_category_count
       FROM books b
       INNER JOIN book_categories bc ON bc.book_id = b.id
       LEFT JOIN reviews r ON r.book_id = b.id
@@ -652,6 +653,7 @@ async function getCategoryBasedRecommendations(
         AND b.id != ALL($2::int[])
       GROUP BY b.id
       ORDER BY
+        matched_category_count DESC,
         (
           COALESCE(COUNT(DISTINCT f.user_id), 0) * 3 +
           COALESCE(COUNT(DISTINCT r.id), 0) * 2 +
@@ -663,7 +665,8 @@ async function getCategoryBasedRecommendations(
     queryParams = [categoryArray, excludeArray, limit];
   } else {
     queryText = `
-      SELECT DISTINCT b.id
+      SELECT DISTINCT b.id,
+        COUNT(DISTINCT CASE WHEN bc.category_id = ANY($1::int[]) THEN bc.category_id END) as matched_category_count
       FROM books b
       INNER JOIN book_categories bc ON bc.book_id = b.id
       LEFT JOIN reviews r ON r.book_id = b.id
@@ -671,6 +674,7 @@ async function getCategoryBasedRecommendations(
       WHERE bc.category_id = ANY($1::int[])
       GROUP BY b.id
       ORDER BY
+        matched_category_count DESC,
         (
           COALESCE(COUNT(DISTINCT f.user_id), 0) * 3 +
           COALESCE(COUNT(DISTINCT r.id), 0) * 2 +
@@ -823,22 +827,19 @@ async function getPopularInCategories(
 
   const categoryArray = Array.from(userCategoryIds);
   const excludeArray = Array.from(excludeBookIds);
-  
-  const excludeCondition = excludeArray.length > 0
-    ? `AND b.id NOT IN (${excludeArray.map((_, i) => `$${categoryArray.length + i + 1}`).join(", ")})`
-    : "";
 
-  const params = [...categoryArray, ...excludeArray];
+  let queryText: string;
+  let queryParams: any[];
 
-  const result = await query(
-    `
+  if (excludeArray.length > 0) {
+    queryText = `
     SELECT DISTINCT b.id
     FROM books b
     INNER JOIN book_categories bc ON bc.book_id = b.id
     LEFT JOIN reviews r ON r.book_id = b.id
     LEFT JOIN favorites f ON f.book_id = b.id
     WHERE bc.category_id = ANY($1::int[])
-      ${excludeCondition}
+      AND b.id != ALL($2::int[])
     GROUP BY b.id
     ORDER BY
       (
@@ -847,10 +848,31 @@ async function getPopularInCategories(
         COALESCE(AVG(r.rating), 0)
       ) DESC,
       b.created_at DESC
-    LIMIT $${params.length + 1}
-    `,
-    [...params, limit]
-  );
+    LIMIT $3
+    `;
+    queryParams = [categoryArray, excludeArray, limit];
+  } else {
+    queryText = `
+    SELECT DISTINCT b.id
+    FROM books b
+    INNER JOIN book_categories bc ON bc.book_id = b.id
+    LEFT JOIN reviews r ON r.book_id = b.id
+    LEFT JOIN favorites f ON f.book_id = b.id
+    WHERE bc.category_id = ANY($1::int[])
+    GROUP BY b.id
+    ORDER BY
+      (
+        COALESCE(COUNT(DISTINCT f.user_id), 0) * 3 +
+        COALESCE(COUNT(DISTINCT r.id), 0) * 2 +
+        COALESCE(AVG(r.rating), 0)
+      ) DESC,
+      b.created_at DESC
+    LIMIT $2
+    `;
+    queryParams = [categoryArray, limit];
+  }
+
+  const result = await query(queryText, queryParams);
 
   console.log("[RECOMMEND DEBUG] Popular in categories fallback results:", {
     categoryIds: categoryArray,
