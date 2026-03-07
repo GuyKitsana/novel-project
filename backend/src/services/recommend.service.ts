@@ -1220,16 +1220,10 @@ export async function getPersonalizedRecommendations(
                 usedBookIds.add(item.bookId);
               }
             }
-          } else {
-            // Truly no books in categories - use global fallback
-            const popularResults = await getPopularAll(excludeBookIds, limit);
-            for (const item of popularResults) {
-              if (!usedBookIds.has(item.bookId)) {
-                results.push({ ...item, similarity: undefined });
-                usedBookIds.add(item.bookId);
-              }
-            }
           }
+          // CRITICAL: Do NOT use global popular fallback for users with categories
+          // Users with categories should ONLY receive category-based recommendations
+          // If no books exist in their categories, return empty results rather than unrelated books
         }
       } catch (err) {
         console.error("[getPersonalizedRecommendations] Error in cold-start category-based recommendations:", err);
@@ -1405,7 +1399,7 @@ export async function getPersonalizedRecommendations(
         // Revert to pre-processed results
         finalResults = rankedBooks.slice(0, limit);
       } else {
-        // No pre-processed results - guaranteed fallback for cold-start users
+        // No pre-processed results - guaranteed fallback for cold-start users with categories
         if (hasCategories && !hasBehavior) {
           try {
             // Rerun simple category query with no aggressive filtering
@@ -1424,8 +1418,9 @@ export async function getPersonalizedRecommendations(
           }
         }
         
-        // If still empty, use global fallback
-        if (finalResults.length === 0) {
+        // CRITICAL: Only use global fallback if user has NO categories AND NO behavior
+        // Users with categories should NEVER receive global popular books
+        if (finalResults.length === 0 && !hasCategories && !hasBehavior) {
           try {
             const popularResults = await getPopularAll(excludeBookIds, limit);
             if (popularResults.length > 0) {
