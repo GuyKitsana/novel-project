@@ -158,26 +158,27 @@ async function fetchUserCategories(userId: number): Promise<Set<number>> {
   );
   const categoryIds = new Set<number>(result.rows.map((row: any) => Number(row.category_id)));
 
-  if (process.env.NODE_ENV !== "production") {
-    if (categoryIds.size > 0) {
-      const categoryArray = Array.from(categoryIds);
-      const placeholders = categoryArray.map((_, i) => `$${i + 1}`).join(", ");
-      const categoryInfoResult = await query(
-        `SELECT id, name, code FROM categories WHERE id IN (${placeholders})`,
-        categoryArray
-      );
-      console.log("[RECOMMEND DEBUG] User categories loaded:", {
-        userId,
-        categoryIds: categoryArray,
-        categoryNames: categoryInfoResult.rows.map((r: any) => ({ id: r.id, name: r.name, code: r.code })),
-      });
-    } else {
-      console.log("[RECOMMEND DEBUG] User categories loaded:", {
-        userId,
-        categoryIds: [],
-        message: "No categories found",
-      });
-    }
+  // DEBUG: Always log categories retrieved from database (not just in non-production)
+  const categoryArray = Array.from(categoryIds);
+  if (categoryArray.length > 0) {
+    const placeholders = categoryArray.map((_, i) => `$${i + 1}`).join(", ");
+    const categoryInfoResult = await query(
+      `SELECT id, name, code FROM categories WHERE id IN (${placeholders})`,
+      categoryArray
+    );
+    console.log("[RECOMMEND DEBUG] User categories retrieved from database:", {
+      userId,
+      categoryIds: categoryArray,
+      categoryNames: categoryInfoResult.rows.map((r: any) => ({ id: r.id, name: r.name, code: r.code })),
+      count: categoryArray.length,
+    });
+  } else {
+    console.log("[RECOMMEND DEBUG] User categories retrieved from database:", {
+      userId,
+      categoryIds: [],
+      message: "No categories found for user",
+      rawRows: result.rows,
+    });
   }
   
   return categoryIds;
@@ -630,14 +631,12 @@ async function getCategoryBasedRecommendations(
   const categoryArray = Array.from(userCategoryIds);
   const excludeArray = Array.from(excludeBookIds);
 
-  // LOG ชั่วคราว: ติดตาม query parameters (เฉพาะ non-production)
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[RECOMMEND DEBUG] Stage 1 query params:", {
-      categoryIds: categoryArray,
-      excludeBookIds: excludeArray,
-      limit,
-    });
-  }
+  // DEBUG: Log query parameters
+  console.log("[RECOMMEND DEBUG] Category-based query parameters:", {
+    categoryIds: categoryArray,
+    excludeBookIds: excludeArray,
+    limit,
+  });
 
   let queryText: string;
   let queryParams: any[];
@@ -686,11 +685,29 @@ async function getCategoryBasedRecommendations(
 
   const result = await query(queryText, queryParams);
 
-  // LOG ชั่วคราว: ติดตามผลลัพธ์ query (เฉพาะ non-production)
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[RECOMMEND DEBUG] Stage 1 query results:", {
-      rowsReturned: result.rows.length,
-      bookIds: result.rows.map((r: any) => Number(r.id)),
+  // DEBUG: Log query results and verify books have categories
+  const bookIds = result.rows.map((r: any) => Number(r.id));
+  console.log("[RECOMMEND DEBUG] Category-based query results:", {
+    rowsReturned: result.rows.length,
+    bookIds: bookIds,
+    categoryIds: categoryArray,
+  });
+
+  // DEBUG: If no results, check if there are any books in these categories at all
+  if (bookIds.length === 0) {
+    const checkQuery = await query(
+      `SELECT COUNT(DISTINCT b.id) as book_count 
+       FROM books b 
+       INNER JOIN book_categories bc ON bc.book_id = b.id 
+       WHERE bc.category_id = ANY($1::int[])`,
+      [categoryArray]
+    );
+    const totalBooksInCategories = Number(checkQuery.rows[0]?.book_count || 0);
+    console.log("[RECOMMEND DEBUG] No books found in category-based query. Checking if books exist in these categories:", {
+      categoryIds: categoryArray,
+      totalBooksInCategories,
+      excludeBookIds: excludeArray,
+      excludeCount: excludeArray.length,
     });
   }
 
@@ -881,7 +898,7 @@ async function getBehaviorBasedRecommendations(
     tfIdfResult = await getTfIdfVectors();
   } catch (err) {
     console.error("[getBehaviorBasedRecommendations] Error getting TF-IDF vectors:", err);
-    return []; // คืนค่าว่างถ้า TF-IDF ล้มเหลว
+    return []; 
   }
 
   if (!tfIdfResult || !tfIdfResult.vectorsByBookId) {
@@ -941,7 +958,7 @@ async function getBehaviorBasedRecommendations(
         similarity: item.similarity,
         ratingAvg: book.rating_avg || 0,
         favoritesCount: book.favorites_count || 0,
-        createdAt: 0, // เราไม่มี created_at ใน query นี้ แต่สามารถเพิ่มได้
+        createdAt: 0, 
         reason: userFavorites.has(item.bookId)
           ? "because_you_favorited"
           : userReviews.has(item.bookId)
@@ -972,43 +989,38 @@ async function getBehaviorBasedRecommendations(
   }));
 }
 
-/**
- * ฟังก์ชันแนะนำหลักที่ใช้ logic แบบ 3 ขั้นตอน + hybrid mix
- */
+
 export async function getPersonalizedRecommendations(
   userId: number,
   limit: number = 20,
   behaviorRatio: number = 0.7
 ): Promise<BookWithMetadata[]> {
-  // ดึงข้อมูลผู้ใช้
+
   const [userFavorites, userReviews, userCategories] = await Promise.all([
     fetchUserFavorites(userId),
     fetchUserReviews(userId),
     fetchUserCategories(userId),
   ]);
 
-  // LOG ชั่วคราว: ติดตามข้อมูลผู้ใช้ (เฉพาะ non-production)
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[RECOMMEND DEBUG] User data:", {
-      userId,
-      limit,
-      behaviorRatio,
-      userCategoriesCount: userCategories.size,
-      favoritesCount: userFavorites.size,
-      reviewsCount: userReviews.size,
-    });
-  }
+  // DEBUG: Always log user data (not just in non-production)
+  const hasBehavior = userFavorites.size > 0 || userReviews.size > 0;
+  const hasCategories = userCategories.size > 0;
+  console.log("[RECOMMEND DEBUG] User data loaded:", {
+    userId,
+    limit,
+    behaviorRatio,
+    userCategoriesCount: userCategories.size,
+    userCategoryIds: Array.from(userCategories),
+    favoritesCount: userFavorites.size,
+    reviewsCount: userReviews.size,
+    hasBehavior,
+    hasCategories,
+  });
 
-  // สร้าง exclusion set (เฉพาะหนังสือที่ถูกใจ - ไม่ exclude reviewed หรือ viewed)
   const excludeBookIds = new Set<number>();
   for (const bookId of userFavorites) {
     excludeBookIds.add(bookId);
   }
-  // หมายเหตุ: เราไม่ exclude reviewed books อีกต่อไป - ผู้ใช้สามารถเห็นหนังสือที่รีวิวแล้วในการแนะนำ
-  // หมายเหตุ: เราไม่ exclude viewed books อีกต่อไป - ผู้ใช้สามารถเห็นหนังสือที่ดูแล้วในการแนะนำ
-
-  const hasBehavior = userFavorites.size > 0 || userReviews.size > 0;
-  const hasCategories = userCategories.size > 0;
 
   const results: Array<{
     bookId: number;
@@ -1018,11 +1030,10 @@ export async function getPersonalizedRecommendations(
   const usedBookIds = new Set<number>();
 
   if (hasBehavior) {
-    // Hybrid mix: 70% จากพฤติกรรม + 30% discovery
+    console.log("[RECOMMEND DEBUG] Using behavior-based recommendation method (user has favorites or reviews)");
     const behaviorLimit = Math.ceil(limit * behaviorRatio);
     const discoveryLimit = limit - behaviorLimit;
 
-    // ขั้นที่ 3: จากพฤติกรรม
     let behaviorResults: Array<{ bookId: number; similarity: number; reason: string }> = [];
     try {
       behaviorResults = await getBehaviorBasedRecommendations(
@@ -1032,6 +1043,11 @@ export async function getPersonalizedRecommendations(
         excludeBookIds,
         behaviorLimit
       );
+      console.log("[RECOMMEND DEBUG] Behavior-based results:", {
+        userId,
+        behaviorResultsCount: behaviorResults.length,
+        behaviorBookIds: behaviorResults.map(r => r.bookId),
+      });
     } catch (err) {
       console.error("[getPersonalizedRecommendations] Error in behavior-based recommendations:", err);
       // Fallback: ถ้า behavior-based ล้มเหลว ดำเนินต่อด้วยผลลัพธ์ว่าง (จะใช้ discovery)
@@ -1044,11 +1060,9 @@ export async function getPersonalizedRecommendations(
       }
     }
 
-    // ถ้า behavior-based คืนค่าไม่มีผลลัพธ์ fallback ไปใช้ category-based
-    // ขั้นที่ 1/2: Discovery (category-based หรือ controlled random)
     if (hasCategories && results.length < limit) {
+      console.log("[RECOMMEND DEBUG] Adding category-based discovery results (user has categories)");
       const remaining = limit - results.length;
-      // ถ้า behavior ล้มเหลวทั้งหมด ใช้ limit เต็มสำหรับ discovery
       const discoveryLimitToUse = behaviorResults.length === 0 ? limit : Math.min(discoveryLimit, remaining);
       try {
         const discoveryResults = await getCategoryBasedRecommendations(
@@ -1057,13 +1071,12 @@ export async function getPersonalizedRecommendations(
           discoveryLimitToUse
         );
 
-        // LOG ชั่วคราว: ติดตามผลลัพธ์ discovery (เฉพาะ non-production)
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[RECOMMEND DEBUG] Discovery (with behavior) results:", {
-            userId,
-            discoveryCount: discoveryResults.length,
-          });
-        }
+        console.log("[RECOMMEND DEBUG] Discovery (with behavior) results:", {
+          userId,
+          discoveryCount: discoveryResults.length,
+          discoveryBookIds: discoveryResults.map(r => r.bookId),
+          userCategoryIds: Array.from(userCategories),
+        });
 
         for (const item of discoveryResults) {
           if (!usedBookIds.has(item.bookId)) {
@@ -1073,15 +1086,12 @@ export async function getPersonalizedRecommendations(
         }
       } catch (err) {
         console.error("[getPersonalizedRecommendations] Error in category-based recommendations:", err);
-        // ดำเนินต่อด้วยผลลัพธ์ที่มีอยู่แล้ว
       }
     }
 
     // FALLBACK ที่รับประกัน: ถ้า behavior + discovery คืนค่า 0 ผลลัพธ์ ใช้ popular all
     if (results.length === 0) {
-      if (process.env.NODE_ENV !== "production") {
-        console.log("[RECOMMEND DEBUG] Behavior + Discovery returned 0 results, using popular_all fallback");
-      }
+      console.log("[RECOMMEND DEBUG] Behavior + Discovery returned 0 results, using popular_all fallback");
       try {
         const popularResults = await getPopularAll(excludeBookIds, limit);
         for (const item of popularResults) {
@@ -1095,14 +1105,9 @@ export async function getPersonalizedRecommendations(
       }
     }
   } else {
-    // Cold start: ขั้นที่ 1 (category-based) พร้อม fallback ขั้นที่ 2
     if (hasCategories) {
-      // FALLBACK A: ผู้ใช้เลือกหมวดหมู่แล้วแต่ไม่มีพฤติกรรม
-      if (process.env.NODE_ENV === "development") {
-        console.log("[getPersonalizedRecommendations] Using category_fallback (user has categories, no behavior)");
-      }
+      console.log("[RECOMMEND DEBUG] Using category-based recommendation method (user has categories, no behavior)");
       
-      // ติดตามว่าได้ผลลัพธ์ category-based หรือไม่ (ก่อน post-processing)
       let hadCategoryBasedResults = false;
       
       try {
@@ -1112,14 +1117,12 @@ export async function getPersonalizedRecommendations(
           limit
         );
 
-        // LOG ชั่วคราว: ติดตามผลลัพธ์ขั้นที่ 1 (เฉพาะ non-production)
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[RECOMMEND DEBUG] Stage 1 (Category-based) results:", {
-            userId,
-            stage1Count: stage1Results.length,
-            categoryIds: Array.from(userCategories),
-          });
-        }
+        console.log("[RECOMMEND DEBUG] Stage 1 (Category-based) results:", {
+          userId,
+          stage1Count: stage1Results.length,
+          stage1BookIds: stage1Results.map(r => r.bookId),
+          categoryIds: Array.from(userCategories),
+        });
 
         hadCategoryBasedResults = stage1Results.length > 0;
 
@@ -1139,13 +1142,12 @@ export async function getPersonalizedRecommendations(
             remaining
           );
 
-          // LOG ชั่วคราว: ติดตามผลลัพธ์ขั้นที่ 2 (เฉพาะ non-production)
-          if (process.env.NODE_ENV !== "production") {
-            console.log("[RECOMMEND DEBUG] Stage 2 (Controlled Random) results:", {
-              userId,
-              stage2Count: stage2Results.length,
-            });
-          }
+          // DEBUG: Log Stage 2 results
+          console.log("[RECOMMEND DEBUG] Stage 2 (Controlled Random) results:", {
+            userId,
+            stage2Count: stage2Results.length,
+            stage2BookIds: stage2Results.map(r => r.bookId),
+          });
 
           if (stage2Results.length > 0) {
             hadCategoryBasedResults = true;
@@ -1159,12 +1161,8 @@ export async function getPersonalizedRecommendations(
           }
         }
 
-        // FALLBACK ที่รับประกัน: เฉพาะเมื่อขั้นที่ 1 + ขั้นที่ 2 คืนค่า 0 ผลลัพธ์จริงๆ
-        // นี่หมายความว่าไม่มีหนังสือในหมวดหมู่ของผู้ใช้ - แล้วใช้ popular all
         if (results.length === 0 && !hadCategoryBasedResults) {
-          if (process.env.NODE_ENV !== "production") {
-            console.log("[RECOMMEND DEBUG] Stage 1+2 returned 0 results (no books in user categories), using popular_all fallback");
-          }
+          console.log("[RECOMMEND DEBUG] Stage 1+2 returned 0 results (no books in user categories), using popular_all fallback");
           try {
             const popularResults = await getPopularAll(excludeBookIds, limit);
             for (const item of popularResults) {
@@ -1184,7 +1182,6 @@ export async function getPersonalizedRecommendations(
         }
       } catch (err) {
         console.error("[getPersonalizedRecommendations] Error in category-based recommendations:", err);
-        // เมื่อเกิด error ใช้ fallback เฉพาะเมื่อไม่มีผลลัพธ์จริงๆ
         if (results.length === 0) {
           try {
             const popularResults = await getPopularAll(excludeBookIds, limit);
@@ -1200,20 +1197,15 @@ export async function getPersonalizedRecommendations(
         }
       }
     } else {
-      // FALLBACK B: ผู้ใช้ไม่มีหมวดหมู่และไม่มีพฤติกรรม -> หนังสือยอดนิยมสุ่ม
-      if (process.env.NODE_ENV === "development") {
-        console.log("[getPersonalizedRecommendations] Using random_fallback (user has no categories, no behavior)");
-      }
+      console.log("[RECOMMEND DEBUG] Using random fallback (user has no categories, no behavior)");
       
       try {
         const randomResults = await getRandomRecommendations(excludeBookIds, limit);
-        // LOG ชั่วคราว: ติดตามผลลัพธ์ fallback (เฉพาะ non-production)
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[RECOMMEND DEBUG] Fallback B (Random Popular) results:", {
-            userId,
-            randomCount: randomResults.length,
-          });
-        }
+        console.log("[RECOMMEND DEBUG] Fallback B (Random Popular) results:", {
+          userId,
+          randomCount: randomResults.length,
+          randomBookIds: randomResults.map(r => r.bookId),
+        });
         for (const item of randomResults) {
           if (!usedBookIds.has(item.bookId)) {
             results.push({ ...item, similarity: undefined });
@@ -1260,15 +1252,13 @@ export async function getPersonalizedRecommendations(
     }
   }
 
-  // LOG ชั่วคราว: ติดตามผลลัพธ์ก่อน post-process (เฉพาะ non-production)
-  if (process.env.NODE_ENV !== "production") {
-    console.log("[RECOMMEND DEBUG] Pre-processed rankedBooks:", {
-      userId,
-      rankedBooksCount: rankedBooks.length,
-      categoryBasedCount: categoryBasedBookIds.size,
-      allBookIds: rankedBooks.map(b => b.id),
-    });
-  }
+  // DEBUG: Log pre-processed results
+  console.log("[RECOMMEND DEBUG] Pre-processed rankedBooks:", {
+    userId,
+    rankedBooksCount: rankedBooks.length,
+    categoryBasedCount: categoryBasedBookIds.size,
+    allBookIds: rankedBooks.map(b => b.id),
+  });
 
   // ใช้ series deduplication และ next volume preference (post-processing)
   // ครอบด้วย try-catch เพื่อให้แน่ใจว่า post-processing จะไม่ crash endpoint
@@ -1349,16 +1339,14 @@ export async function getPersonalizedRecommendations(
       finalResults = afterSeriesResults;
     }
 
-    // LOG ชั่วคราว: ติดตามผลลัพธ์ post-processing (เฉพาะ non-production)
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RECOMMEND DEBUG] Post-processing results:", {
-        userId,
-        beforePostProcess: rankedBooks.length,
-        afterSeriesDedup: afterSeriesResults.length,
-        afterCategoryDiversity: finalResults.length,
-        hadCategoryBasedResults: categoryBasedBookIds.size > 0,
-      });
-    }
+    // DEBUG: Log post-processing results
+    console.log("[RECOMMEND DEBUG] Post-processing results:", {
+      userId,
+      beforePostProcess: rankedBooks.length,
+      afterSeriesDedup: afterSeriesResults.length,
+      afterCategoryDiversity: finalResults.length,
+      hadCategoryBasedResults: categoryBasedBookIds.size > 0,
+    });
 
     // FALLBACK ที่รับประกัน: ถ้า post-processing ลดผลลัพธ์เหลือ 0
     if (finalResults.length === 0) {
@@ -1415,14 +1403,14 @@ export async function getPersonalizedRecommendations(
       }
     }
 
-    // LOG ชั่วคราว: ติดตามผลลัพธ์สุดท้าย (เฉพาะ non-production)
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RECOMMEND DEBUG] Final results:", {
-        userId,
-        finalCount: finalResults.length,
-        firstBookId: finalResults[0]?.id || null,
-      });
-    }
+    // DEBUG: Log final results with all book IDs
+    console.log("[RECOMMEND DEBUG] Final recommended book IDs:", {
+      userId,
+      finalCount: finalResults.length,
+      finalBookIds: finalResults.map(b => b.id),
+      firstBookId: finalResults[0]?.id || null,
+      recommendationMethod: hasBehavior ? "behavior-based" : hasCategories ? "category-based" : "random-fallback",
+    });
 
     return finalResults;
   } catch (err) {

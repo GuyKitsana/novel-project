@@ -29,14 +29,12 @@ export const getRecommendationsForMe = async (
     const limit = Number(req.query.limit) || 20;
     const behaviorRatio = Number(req.query.behaviorRatio) || 0.7;
 
-    // TEMP LOG: Track request parameters (non-production only)
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RECOMMEND DEBUG] Request params:", {
-        userId,
-        limit,
-        behaviorRatio,
-      });
-    }
+    // DEBUG: Always log request parameters
+    console.log("[RECOMMEND DEBUG] Request params:", {
+      userId,
+      limit,
+      behaviorRatio,
+    });
 
     const recommendations = await getPersonalizedRecommendations(
       userId,
@@ -47,14 +45,13 @@ export const getRecommendationsForMe = async (
     // Ensure we always return an array (defensive check)
     const items = Array.isArray(recommendations) ? recommendations : [];
     
-    // TEMP LOG: Track response (non-production only)
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RECOMMEND DEBUG] Response:", {
-        userId,
-        itemsCount: items.length,
-        firstBookId: items[0]?.id || null,
-      });
-    }
+    // DEBUG: Always log response
+    console.log("[RECOMMEND DEBUG] Controller response:", {
+      userId,
+      itemsCount: items.length,
+      firstBookId: items[0]?.id || null,
+      allBookIds: items.map((item: any) => item.id),
+    });
     
     return res.json({ items });
   } catch (err: any) {

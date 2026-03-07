@@ -37,11 +37,20 @@ export const saveCategories = async (
   // req.body is already validated by Zod schema
   const { favoriteCategories } = req.body; // ['fantasy','romance'] - already validated as non-empty array
 
+  // DEBUG: Log categories received by backend
+  console.log("[ONBOARDING DEBUG] Categories received by backend:", {
+    userId,
+    favoriteCategories,
+    count: favoriteCategories.length,
+  });
+
   // ลบของเดิม
   await query(
     "DELETE FROM user_categories WHERE user_id = $1",
     [userId]
   );
+
+  const storedCategoryIds: number[] = [];
 
   // เพิ่มของใหม่
   for (const code of favoriteCategories) {
@@ -51,12 +60,24 @@ export const saveCategories = async (
     );
 
     if (result.rows.length > 0) {
+      const categoryId = result.rows[0].id;
       await query(
         "INSERT INTO user_categories (user_id, category_id) VALUES ($1, $2)",
-        [userId, result.rows[0].id]
+        [userId, categoryId]
       );
+      storedCategoryIds.push(categoryId);
+    } else {
+      console.warn(`[ONBOARDING DEBUG] Category code not found: ${code}`);
     }
   }
+
+  // DEBUG: Log categories stored in database
+  console.log("[ONBOARDING DEBUG] Categories stored in database:", {
+    userId,
+    categoryIds: storedCategoryIds,
+    categoryCodes: favoriteCategories,
+    storedCount: storedCategoryIds.length,
+  });
 
   res.json({ message: "Onboarding completed" });
 };

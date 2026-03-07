@@ -12,7 +12,7 @@ const DEBUG = process.env.NEXT_PUBLIC_DEBUG === "1";
 const CATEGORIES = [
   { key: "fantasy", label: "แฟนตาซี 🧙‍♂️" },
   { key: "romance", label: "โรแมนซ์ 💖" },
-  { key: "sci_fi", label: "ไซไฟ 🚀" },
+  { key: "sci_fi", label: "นิยายวิทยาศาสตร์ 🚀" },
   { key: "action_adventure", label: "แอคชัน / ผจญภัย ⚔️" },
   { key: "mystery_thriller", label: "สืบสวน 🔍" },
   { key: "horror", label: "สยองขวัญ 👻" },
@@ -174,6 +174,13 @@ export default function OnboardingCategoriesPage() {
     }
 
     setError(null);
+
+    // DEBUG: Log categories being sent from frontend
+    console.log("[ONBOARDING DEBUG] Categories being sent to backend:", {
+      userId: user?.id,
+      favoriteCategories: selected,
+      count: selected.length,
+    });
 
     try {
       await apiPut(
